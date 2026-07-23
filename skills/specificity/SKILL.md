@@ -59,7 +59,12 @@ to explain:
 1. Read `~/.specificity/EXPERIENCE.md` if it exists.
 2. Default to `preferred` stacks. Suggest `fine` ones freely. Suggest
    `tolerated` ones only with a stated reason. Never suggest `avoid`.
-3. Match explanation depth to the profile — don't explain basics to someone
+3. **Match register to trajectory.** In `learning`/`growing` stacks, teach
+   while doing: explain the reasoning, name the concept, leave the
+   developer better than you found them. In `fluent` stacks, be terse —
+   senior-peer register, no unprompted explanations. In `rusty` stacks,
+   re-orient briefly, then proceed.
+4. Match explanation depth to the profile — don't explain basics to someone
    who asked for senior-peer register.
 4. No EXPERIENCE.md → don't interview; at most one line when a stack choice
    matters: "Run `/specificity-experience` and I'll stop guessing your
@@ -78,7 +83,8 @@ developer corrects your interpretation:
 
 The same loop applies to stack corrections: the developer says "I prefer X"
 or "not that framework" → propose one line for `~/.specificity/EXPERIENCE.md`
-(`- <tech>: <proficiency>, <preference> — <note>`), write on confirmation.
+(`- <tech>: <proficiency>, <preference>, <trajectory> — <note>`), write on
+confirmation.
 
 ## Trust boundary
 

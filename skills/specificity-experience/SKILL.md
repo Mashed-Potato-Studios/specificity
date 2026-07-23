@@ -38,11 +38,17 @@ pass and get a "yes" before writing.
    now. Keep each stop to one line. *Recommended shape: "React (first) →
    Vue/Nuxt → backend, current focus."*
 2. **Stack table** — for each language/framework/tool they mention or you
-   find: proficiency AND preference, as separate ratings. Preference labels:
-   `preferred` (default to this), `fine` (will use happily), `tolerated`
-   (can, would rather not), `avoid` (don't suggest). Ask the preference
-   question explicitly for anything they're merely competent in — that's
-   where agents go wrong.
+   find, three separate ratings:
+   - **proficiency** — how good they are at it today
+   - **preference** — `preferred` (default to this), `fine` (will use
+     happily), `tolerated` (can, would rather not), `avoid` (don't suggest)
+   - **trajectory** — `fluent` (solid, staying), `growing` (actively
+     improving), `learning` (new, wants to get good), `rusty` (was fluent,
+     hasn't touched it)
+
+   Ask the preference AND trajectory questions explicitly for anything
+   they're merely competent in — capability and desire misalign exactly
+   there, and that's where agents go wrong.
 3. **Current focus** — what they're actively getting better at right now.
    Suggestions should stretch toward this, not away from it.
 4. **Explanation depth** — how much explanation do they want: skip basics?
@@ -60,7 +66,7 @@ Write `~/.specificity/EXPERIENCE.md` with exactly this skeleton:
 <!-- one line per stop, in order -->
 
 ## Stack
-<!-- - <tech>: <proficiency>, <preferred|fine|tolerated|avoid> — <note> -->
+<!-- - <tech>: <proficiency>, <preferred|fine|tolerated|avoid>, <fluent|growing|learning|rusty> — <note> -->
 
 ## Current Focus
 
