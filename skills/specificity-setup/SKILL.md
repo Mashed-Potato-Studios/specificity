@@ -18,11 +18,20 @@ specific sections?
 
 ## Interview protocol
 
-From `/grilling`: **one question at a time**, always with a **recommended
-answer** the developer can accept or correct. Facts you can observe (OS,
-shell, editors in the repo, languages in package.json) get **looked up, not
-asked**. Never ask a question whose answer is sitting in their dotfiles or
-current project.
+Self-contained — no external skill needed. Three rules, held for the whole
+interview:
+
+1. **One question at a time.** Multiple questions at once is bewildering.
+2. **Every question ships with a recommended answer** the developer can
+   accept with one word or correct. Never an empty prompt.
+3. **Facts get looked up, never asked.** Anything observable — OS, shell,
+   editors, languages in package.json, dotfiles — you check yourself. Only
+   the person can answer questions about the person; everything else is
+   your job.
+
+Confirm each answer before moving on. When all sections are done (or
+waved off), read the profile back in one pass and get a final "yes" before
+writing.
 
 ## Interview sections
 
