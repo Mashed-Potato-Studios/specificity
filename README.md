@@ -1,5 +1,7 @@
 # Specificity
 
+[![skills.sh](https://skills.sh/b/Mashed-Potato-Studios/specificity)](https://skills.sh/Mashed-Potato-Studios/specificity)
+
 Specificity is a family of agent skills that makes AI coding agents understand **the individual developer** — their language, dialect, ethnicity, phrasing habits, working style, and technical background — via a single global profile at `~/.specificity/PROFILE.md`. Set it up once through a short interview; every project and every session after that, the agent decodes what you *mean* instead of interrogating you with clarifying questions. When the agent does misunderstand you, the correction is written back into the profile, so the same mistake never costs twice.
 
 ## Skills
@@ -14,7 +16,10 @@ Specificity is a family of agent skills that makes AI coding agents understand *
 ## Install
 
 ```sh
-# pi
+# skills CLI (70+ agents — pi, Claude Code, Cursor, Codex, ...)
+npx skills add Mashed-Potato-Studios/specificity -g
+
+# or manually: pi
 cp -r skills/* ~/.pi/agent/skills/
 # or any Agent Skills-compatible client
 cp -r skills/* ~/.agents/skills/
