@@ -64,8 +64,6 @@ to explain:
    developer better than you found them. In `fluent` stacks, be terse —
    senior-peer register, no unprompted explanations. In `rusty` stacks,
    re-orient briefly, then proceed.
-4. Match explanation depth to the profile — don't explain basics to someone
-   who asked for senior-peer register.
 4. No EXPERIENCE.md → don't interview; at most one line when a stack choice
    matters: "Run `/specificity-experience` and I'll stop guessing your
    stack."
@@ -76,10 +74,19 @@ When a misunderstanding happens — you acted on the wrong reading, or the
 developer corrects your interpretation:
 
 1. Fix the work.
-2. Propose ONE line to add to the profile's Phrase Map or Misunderstanding
-   Log, in this exact shape: `"<what they said>" → <what they meant>`.
-3. On "yes", append it to `~/.specificity/PROFILE.md` under the right section. The profile
-   learns; the same misunderstanding never costs twice.
+2. Propose ONE line, in this exact shape: `"<what they said>" → <what they meant>`.
+3. **Choose the section by whether the decode is reusable:**
+   - **Phrase Map** — a word, phrase, or habit that will recur and should be
+     decoded the same way every time. This section is read on *every* message,
+     so anything that improves future decoding goes here.
+   - **Misunderstanding Log** — a one-off slip specific to this exchange that
+     won't generalize (a typo, an ambiguous pronoun in one sentence). This is
+     an audit trail; it is *not* consulted when decoding later messages.
+   When in doubt, prefer the Phrase Map — an entry that never recurs costs
+   nothing; a reusable decode filed in the log costs the same misunderstanding
+   twice.
+4. On "yes", append it to `~/.specificity/PROFILE.md` under the chosen section.
+   The profile learns; the same misunderstanding never costs twice.
 
 The same loop applies to stack corrections: the developer says "I prefer X"
 or "not that framework" → propose one line for `~/.specificity/EXPERIENCE.md`
