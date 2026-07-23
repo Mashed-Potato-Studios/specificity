@@ -1,0 +1,6 @@
+.pi-subagents/
+.pi/
+.DS_Store
+node_modules/
+*.log
+/tmp/
