@@ -29,6 +29,29 @@ cp -r skills/* ~/.agents/skills/
 
 Then run `/specificity-setup` once to build your profile, `/specificity-experience` to map your stack preferences, and optionally `/specificity-dialect` to review a dialect seed pack.
 
+## CLI & runtime
+
+Specificity also ships as an npm package with a CLI and session hooks, so it works beyond skills-aware agents:
+
+```sh
+npx specificity profile        # show your profile + experience
+npx specificity profile reset  # delete both files, start over
+npx specificity version
+```
+
+The hooks activate the mode at session start and show `[SPECIFICITY]` in the status line while it's on. Your profile lives at `~/.specificity/` (override with `SPECIFICITY_PROFILE_DIR`) and is the single source of truth shared across every agent — only the ephemeral "active" flag is per-agent, so Claude Code, Codex, Copilot, and Qoder all read and write the same you.
+
+## MCP server
+
+For hosts that take context only through tool calls (no hooks, no skills), `specificity-mcp` exposes the profile as MCP tools:
+
+- **Read** — `get_profile`, `get_experience`, `get_phrase_intent`, `get_stack_preference`, `get_preferred_stack`.
+- **Learn** (gated, two-step) — `propose_correction` validates a phrase or stack entry and returns a normalized preview to show you; `apply_correction` writes it only with `confirmed: true`, which the agent may set solely after you approve the exact line. Writes are atomic and validated against the profile convention, so the loop that lets the agent learn from a misunderstanding works even where skills can't run.
+
+```sh
+npm run mcp   # stdio MCP server; wire it into your host's MCP config
+```
+
 ## Open profile convention
 
 `~/.specificity/` is an open, agent-neutral Markdown convention for describing the person behind the code. Any agent may read it; no Specificity runtime is required. See [The Specificity Profile Convention](docs/PROFILE-CONVENTION.md) for the versioned format, precedence, privacy rules, and consumer contract.
