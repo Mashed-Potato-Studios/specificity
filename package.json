@@ -16,7 +16,7 @@
     "./mcp": "./specificity-mcp/index.js"
   },
   "scripts": {
-    "test": "node tests/profile.test.js && node tests/hooks.test.js",
+    "test": "node tests/profile.test.js && node tests/hooks.test.js && node tests/mcp.test.js",
     "cli": "node src/cli.js",
     "mcp": "node specificity-mcp/index.js"
   },
