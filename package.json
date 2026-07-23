@@ -1,0 +1,26 @@
+{
+  "name": "specificity",
+  "version": "0.1.0",
+  "description": "Agent skills that make AI understand the individual developer — language, dialect, habits, stack preferences. One global profile, every project.",
+  "bin": {
+    "specificity": "src/cli.js"
+  },
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./hooks/specificity-instructions": "./hooks/specificity-instructions.js",
+    "./hooks/specificity-config": "./hooks/specificity-config.js",
+    "./hooks/specificity-runtime": "./hooks/specificity-runtime.js",
+    "./hooks/specificity-activate": "./hooks/specificity-activate.js",
+    "./hooks/specificity-mode-tracker": "./hooks/specificity-mode-tracker.js"
+  },
+  "scripts": {
+    "test": "node tests/profile.test.js && node tests/hooks.test.js",
+    "cli": "node src/cli.js"
+  },
+  "keywords": ["agent-skills", "ai-coding", "developer-profile", "dialect", "preferences"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
