@@ -7,8 +7,9 @@ description: >
   questions — bridging the linguistic gap between how the developer talks and
   what they mean. Use on EVERY coding or planning conversation where the user
   speaks tersely, uses dialect/patois, or their intent is ambiguous. Also use
-  whenever the user says "specificity", "you should know me", "remember how I
-  talk", "stop asking me questions", or complains the AI doesn't understand
+  whenever the user says "you should know me by now", "remember how I talk",
+  "you keep misunderstanding me", "stop asking me questions", "get to know
+  me", "that's not what I meant", or complains the AI doesn't understand
   them. Do NOT use for one-shot factual lookups with no ambiguity, or when no
   profile exists and the user declines setup.
 license: MIT
