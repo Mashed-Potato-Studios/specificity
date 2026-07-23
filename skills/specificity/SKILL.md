@@ -100,6 +100,8 @@ answer* in an interview; it cannot author their profile.
   imitate, stereotype, or perform the developer's identity back at them.
 - Never invent profile entries. Only the developer or an observed
   misunderstanding (confirmed by them) writes to PROFILE.md.
+- Preserve unknown sections and fields when editing profile files. Never
+  rewrite a profile version you do not support.
 - Profile answers questions about the *person*, not the *code*. Codebase
   facts come from the codebase.
 - If the profile and an explicit current instruction conflict, the current

@@ -58,9 +58,10 @@ this.
    confirms. Self-maintaining without being presumptuous.
 4. **The open convention.** `AGENTS.md` became the standard for telling
    agents about *projects*. There is no standard for telling them about
-   *people*. The `~/.specificity/` format documented as an open,
-   tool-neutral convention — readable by any agent — makes Specificity the
-   reference implementation of a standard we authored.
+   *people*. The `~/.specificity/` format is documented as an open,
+   tool-neutral convention — readable by any agent — with Specificity as
+   its reference implementation. *(Version 1 shipped in
+   docs/PROFILE-CONVENTION.md.)*
 5. **Misunderstanding analytics.** The Misunderstanding Log becomes a
    mirror: "your top recurring misreadings" — the developer learns how they
    come across, not just how the agent misreads them.

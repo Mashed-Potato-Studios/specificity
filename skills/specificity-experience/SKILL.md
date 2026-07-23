@@ -59,6 +59,7 @@ pass and get a "yes" before writing.
 Write `~/.specificity/EXPERIENCE.md` with exactly this skeleton:
 
 ```markdown
+<!-- specificity-experience-version: 1 -->
 # Specificity Experience — <name/handle>
 # Updated: <date>. Re-run /specificity-experience when your stack changes.
 

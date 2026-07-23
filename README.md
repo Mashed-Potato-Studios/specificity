@@ -29,6 +29,10 @@ cp -r skills/* ~/.agents/skills/
 
 Then run `/specificity-setup` once to build your profile, `/specificity-experience` to map your stack preferences, and optionally `/specificity-dialect` to review a dialect seed pack.
 
+## Open profile convention
+
+`~/.specificity/` is an open, agent-neutral Markdown convention for describing the person behind the code. Any agent may read it; no Specificity runtime is required. See [The Specificity Profile Convention](docs/PROFILE-CONVENTION.md) for the versioned format, precedence, privacy rules, and consumer contract.
+
 ## Status
 
 Early development.

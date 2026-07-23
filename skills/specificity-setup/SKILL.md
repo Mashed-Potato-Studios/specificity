@@ -62,6 +62,7 @@ Walk these in order. Skip any the developer waves off.
 Write PROFILE.md with exactly this skeleton, filled from the interview:
 
 ```markdown
+<!-- specificity-profile-version: 1 -->
 # Specificity Profile — <name/handle>
 # Updated: <date>. Setup once; grows via the specificity loop.
 
