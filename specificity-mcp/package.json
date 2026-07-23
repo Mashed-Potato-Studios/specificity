@@ -1,0 +1,26 @@
+{
+  "name": "@mashed-potato-studios/specificity-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the Specificity developer profile — structured access to language, dialect, stack preferences, and trajectory",
+  "type": "module",
+  "bin": {
+    "specificity-mcp": "./index.js"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "keywords": [
+    "mcp",
+    "agent-skills",
+    "developer-profile",
+    "specificity"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

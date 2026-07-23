@@ -12,14 +12,17 @@
     "./hooks/specificity-config": "./hooks/specificity-config.js",
     "./hooks/specificity-runtime": "./hooks/specificity-runtime.js",
     "./hooks/specificity-activate": "./hooks/specificity-activate.js",
-    "./hooks/specificity-mode-tracker": "./hooks/specificity-mode-tracker.js"
+    "./hooks/specificity-mode-tracker": "./hooks/specificity-mode-tracker.js",
+    "./mcp": "./specificity-mcp/index.js"
   },
   "scripts": {
     "test": "node tests/profile.test.js && node tests/hooks.test.js",
-    "cli": "node src/cli.js"
+    "cli": "node src/cli.js",
+    "mcp": "node specificity-mcp/index.js"
   },
   "keywords": ["agent-skills", "ai-coding", "developer-profile", "dialect", "preferences"],
   "license": "MIT",
+  "type": "module",
   "engines": {
     "node": ">=18"
   }

@@ -1,16 +1,14 @@
 // Tests for specificity hooks
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const assert = require('assert');
+import fs from "fs";
+import path from "path";
+import os from "os";
+import assert from "assert";
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'specificity-hooks-test-'));
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "specificity-hooks-test-"));
 process.env.SPECIFICITY_PROFILE_DIR = tmpDir;
 
-delete require.cache[require.resolve('../hooks/specificity-config')];
-delete require.cache[require.resolve('../hooks/specificity-runtime')];
-const config = require('../hooks/specificity-config');
-const runtime = require('../hooks/specificity-runtime');
+const config = await import("../hooks/specificity-config.js");
+const runtime = await import("../hooks/specificity-runtime.js");
 
 let passed = 0;
 let failed = 0;
@@ -26,29 +24,28 @@ function test(name, fn) {
   }
 }
 
-test('readMode returns null when no state file', () => {
+test("readMode returns null when no state file", () => {
   assert.strictEqual(runtime.readMode(), null);
 });
 
-test('setMode writes state file', () => {
-  runtime.setMode('active');
-  assert.strictEqual(runtime.readMode(), 'active');
+test("setMode writes state file", () => {
+  runtime.setMode("active");
+  assert.strictEqual(runtime.readMode(), "active");
 });
 
-test('clearMode removes state file', () => {
-  runtime.setMode('active');
+test("clearMode removes state file", () => {
+  runtime.setMode("active");
   runtime.clearMode();
   assert.strictEqual(runtime.readMode(), null);
 });
 
-test('writeHookOutput does not throw for native Claude', () => {
-  // Native Claude path just writes context to stdout
-  let output = '';
-  const origWrite = process.stdout.write;
+test("writeHookOutput does not throw for native Claude", () => {
+  let output = "";
+  const origWrite = process.stdout.write.bind(process.stdout);
   process.stdout.write = (s) => { output += s; };
   try {
-    runtime.writeHookOutput('SessionStart', 'active', 'test context');
-    assert.ok(output.includes('test context'));
+    runtime.writeHookOutput("SessionStart", "active", "test context");
+    assert.ok(output.includes("test context"));
   } finally {
     process.stdout.write = origWrite;
   }

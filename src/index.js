@@ -1,10 +1,17 @@
 // specificity — programmatic API
 // Exposes profile reading and instruction building for programmatic use.
 
-const { getProfilePath, getExperiencePath, getProfileDir, hasProfile, readProfile, readExperience } = require('../hooks/specificity-config');
-const { getSpecificityInstructions, getProfileContext } = require('../hooks/specificity-instructions');
+import {
+  getProfileDir,
+  getProfilePath,
+  getExperiencePath,
+  hasProfile,
+  readProfile,
+  readExperience,
+} from "../hooks/specificity-config.js";
+import { getSpecificityInstructions, getProfileContext } from "../hooks/specificity-instructions.js";
 
-module.exports = {
+export {
   // Config
   getProfileDir,
   getProfilePath,

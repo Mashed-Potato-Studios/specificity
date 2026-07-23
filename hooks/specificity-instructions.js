@@ -3,39 +3,37 @@
 // Reads the developer's profile and experience files, then injects them
 // as session context so the agent has the user's model available.
 
-const fs = require('fs');
-const { readProfile, readExperience, hasProfile } = require('./specificity-config');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { hasProfile, readProfile, readExperience } from "./specificity-config.js";
 
-const SKILL_PATH = require('path').join(__dirname, '..', 'skills', 'specificity', 'SKILL.md');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SKILL_PATH = path.join(__dirname, "..", "skills", "specificity", "SKILL.md");
 
-function getProfileContext() {
+export function getProfileContext() {
   if (!hasProfile()) {
-    return 'No Specificity profile found. Run `/specificity-setup` to build one (one interview, works globally).';
+    return "No Specificity profile found. Run `/specificity-setup` to build one (one interview, works globally).";
   }
 
   const profile = readProfile();
   const experience = readExperience();
 
-  let context = 'SPECIFICITY ACTIVE — developer profile loaded.\n\n';
-  context += '## Profile\n\n' + (profile || '');
+  let context = "SPECIFICITY ACTIVE — developer profile loaded.\n\n";
+  context += "## Profile\n\n" + (profile || "");
   if (experience) {
-    context += '\n\n## Experience\n\n' + experience;
+    context += "\n\n## Experience\n\n" + experience;
   }
-  context += '\n\nRead this before interpreting the developer\'s messages. Decode against it first; only ask when it cannot resolve ambiguity.';
+  context += "\n\nRead this before interpreting the developer's messages. Decode against it first; only ask when it cannot resolve ambiguity.";
   return context;
 }
 
-function getSpecificityInstructions() {
+export function getSpecificityInstructions() {
   try {
-    const skillBody = fs.readFileSync(SKILL_PATH, 'utf8')
-      .replace(/^---[\s\S]*?---\s*/, '');
-    return 'SPECIFICITY ACTIVE — developer-understanding mode.\n\n' + skillBody + '\n\n' + getProfileContext();
+    const skillBody = fs.readFileSync(SKILL_PATH, "utf8")
+      .replace(/^---[\s\S]*?---\s*/, "");
+    return "SPECIFICITY ACTIVE — developer-understanding mode.\n\n" + skillBody + "\n\n" + getProfileContext();
   } catch (e) {
-    return 'SPECIFICITY ACTIVE — developer-understanding mode.\n\n' + getProfileContext();
+    return "SPECIFICITY ACTIVE — developer-understanding mode.\n\n" + getProfileContext();
   }
 }
-
-module.exports = {
-  getProfileContext,
-  getSpecificityInstructions,
-};
