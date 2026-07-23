@@ -18,8 +18,9 @@ interrogating you. Set up once, globally. Works in every project after.
 
 | Skill | Invocation | Does |
 |---|---|---|
-| `specificity` | model-invoked, persistent | Active every response once a profile exists. Decodes your messages against your profile before asking anything. Learns from misunderstandings. |
+| `specificity` | model-invoked, persistent | Active every response once a profile exists. Decodes your messages against your profile before asking anything; biases stack suggestions to your preferences. Learns from corrections. |
 | `specificity-setup` | `/specificity-setup` | One-time interview → writes your global profile. Run once, ever. |
+| `specificity-experience` | `/specificity-experience` | One-time interview → maps your technical journey and stack preferences (can-use vs prefer). Re-run when your stack changes. |
 | `specificity-profile` | model-invoked, one-shot | Show, amend, or reset your profile. |
 | `specificity-help` | model-invoked, one-shot | This card. |
 
@@ -32,6 +33,7 @@ interrogating you. Set up once, globally. Works in every project after.
 
 ## Profile location
 
-`~/.specificity/PROFILE.md` — outside the skill folder by design, so
-updating or reinstalling the skill never touches your data. One file, every
-project.
+`~/.specificity/PROFILE.md` (who you are, how you talk) and
+`~/.specificity/EXPERIENCE.md` (what you know, what you prefer) — outside
+the skill folder by design, so updating or reinstalling the skill never
+touches your data. Two files, every project.
