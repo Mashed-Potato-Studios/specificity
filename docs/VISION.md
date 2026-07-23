@@ -46,11 +46,12 @@ this.
    Operationalizes "how developers learn and adapt with AI." *(Shipped —
    see skills/specificity-experience.)*
 2. **Dialect packs.** Community-contributed seed Phrase Maps per
-   dialect/culture (Jamaican patois, Nigerian English, AAVE, Singlish…)
-   that `/specificity-setup` offers as a *starting draft*, then personalizes
-   through the interview. Culture as shareable infrastructure — the pack is
-   always a draft, never the authority; the person's own words win. Packs
-   are authored by people of that culture, never inferred.
+   dialect/culture (Jamaican Patwa, Nigerian English, AAVE, Singlish…)
+   reviewed one phrase at a time through `/specificity-dialect`. Culture as
+   shareable infrastructure — the pack is always a draft, never the
+   authority; the person's own words win. Packs are authored and reviewed
+   by people of that culture, never inferred. *(Starter framework shipped;
+   first Jamaican Patwa pack remains draft pending Jamaican-led review.)*
 3. **Declared vs observed reconciliation.** The agent notices drift ("your
    git history is 80% Go but EXPERIENCE.md says learning") and *proposes* an
    update. Never auto-writes. Observations carry evidence; the developer

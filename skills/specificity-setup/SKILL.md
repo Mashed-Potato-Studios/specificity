@@ -85,4 +85,5 @@ session, so it's an index, not a memoir.
 Tell the developer: "Profile written. Specificity is now active in every
 project. It updates itself when it misunderstands you — say 'stop
 specificity' to turn it off. Next: run `/specificity-experience` to teach
-it your stack preferences, so it stops guessing which frameworks you want."
+it your stack preferences. If you use a language or dialect agents often
+misread, run `/specificity-dialect` to review an optional seed pack."

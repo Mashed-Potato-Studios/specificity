@@ -11,6 +11,7 @@ Specificity is a family of agent skills that makes AI coding agents understand *
 | `specificity` | persistent mode | Active every response once a profile exists. Decodes your messages against your profile before asking anything; learns from misunderstandings. Off: "stop specificity". |
 | `specificity-setup` | one-shot | One-time interview that writes your global profile. Run once, ever. |
 | `specificity-experience` | one-shot | One-time interview that maps your technical journey and stack preferences (can-use vs prefer) — the agent defaults to your preferred stacks. Re-run when your stack changes. |
+| `specificity-dialect` | one-shot | Reviews an optional, source-backed dialect seed pack one phrase at a time. Only developer-confirmed meanings enter the profile; interpretation, never imitation. |
 | `specificity-profile` | one-shot | Show, amend, or reset your profile. |
 | `specificity-help` | one-shot | Reference card for the family. |
 
@@ -26,7 +27,7 @@ cp -r skills/* ~/.pi/agent/skills/
 cp -r skills/* ~/.agents/skills/
 ```
 
-Then run `/specificity-setup` once to build your profile, and `/specificity-experience` to map your stack preferences.
+Then run `/specificity-setup` once to build your profile, `/specificity-experience` to map your stack preferences, and optionally `/specificity-dialect` to review a dialect seed pack.
 
 ## Status
 

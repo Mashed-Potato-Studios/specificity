@@ -21,6 +21,7 @@ interrogating you. Set up once, globally. Works in every project after.
 | `specificity` | model-invoked, persistent | Active every response once a profile exists. Decodes your messages against your profile before asking anything; biases stack suggestions to your preferences. Learns from corrections. |
 | `specificity-setup` | `/specificity-setup` | One-time interview → writes your global profile. Run once, ever. |
 | `specificity-experience` | `/specificity-experience` | One-time interview → maps your technical journey and stack preferences (can-use vs prefer). Re-run when your stack changes. |
+| `specificity-dialect` | `/specificity-dialect` | Reviews an optional dialect seed pack one phrase at a time; only your confirmed meanings enter your profile. |
 | `specificity-profile` | model-invoked, one-shot | Show, amend, or reset your profile. |
 | `specificity-help` | model-invoked, one-shot | This card. |
 
