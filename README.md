@@ -29,6 +29,28 @@ cp -r skills/* ~/.agents/skills/
 
 Then run `/specificity-setup` once to build your profile, `/specificity-experience` to map your stack preferences, and optionally `/specificity-dialect` to review a dialect seed pack.
 
+## Update
+
+Re-run the same command you installed with — it overwrites the skill files in place:
+
+```sh
+# skills CLI
+npx skills add Mashed-Potato-Studios/specificity -g
+
+# or manually, from a fresh clone/pull of this repo
+cp -r skills/* ~/.pi/agent/skills/
+cp -r skills/* ~/.agents/skills/
+
+# CLI / hooks (npx always resolves the latest published version)
+npx specificity@latest version
+```
+
+Start a new agent session afterwards so the session hooks reload.
+
+**Your profile is never touched by an update.** `~/.specificity/PROFILE.md` and `EXPERIENCE.md` live outside every install path by design, so upgrading or reinstalling the skills can't overwrite, migrate, or delete what you told the agent about yourself. You only ever change them by running `/specificity-profile`, `/specificity-setup`, or `npx specificity profile reset`.
+
+To update the *profile* rather than the skill, see `/specificity-profile` (amend or reset) and re-run `/specificity-experience` when your stack changes.
+
 ## CLI & runtime
 
 Specificity also ships as an npm package with a CLI and session hooks, so it works beyond skills-aware agents:

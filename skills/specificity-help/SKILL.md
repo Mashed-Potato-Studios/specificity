@@ -25,12 +25,30 @@ interrogating you. Set up once, globally. Works in every project after.
 | `specificity-profile` | model-invoked, one-shot | Show, amend, or reset your profile. |
 | `specificity-help` | model-invoked, one-shot | This card. |
 
+## Order
+
+`/specificity-setup` first (it writes the profile everything else builds on),
+then `/specificity-experience`, then optionally `/specificity-dialect`.
+
 ## Commands
 
-- **Turn off**: "stop specificity" / "normal mode"
-- **Update**: tell `specificity-profile` the change in plain language
+- **Turn off**: "stop specificity" / "normal mode" — or `/specificity-off`
+- **Update what it knows about you**: tell `specificity-profile` the change in
+  plain language; re-run `/specificity-experience` when your stack changes
 - **It learned something wrong**: correct it; it will propose a one-line
   profile fix and never repeat the mistake
+
+## Update the skill itself
+
+Re-run the command you installed with — it overwrites the skill files in
+place, then start a new session so the hooks reload:
+
+```sh
+npx skills add Mashed-Potato-Studios/specificity -g   # skills CLI
+cp -r skills/* ~/.pi/agent/skills/                    # or manual, from a fresh pull
+```
+
+Updating the skill never touches your profile — see below.
 
 ## Profile location
 
