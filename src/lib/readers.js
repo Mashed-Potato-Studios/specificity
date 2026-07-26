@@ -167,12 +167,18 @@ export const READERS = [claudeCodeReader, piReader];
  * Read every configured host. A reader that fails validation is quarantined —
  * reported, skipped, and never allowed to take the others down with it.
  */
-export function readAll({ readers = READERS, roots = {}, cursors = {} } = {}) {
+export function readAll({ readers = READERS, roots = {}, cursors = {}, quarantine = [] } = {}) {
   const turns = [];
   const quarantined = [];
   const nextCursors = { ...cursors };
+  const alreadyQuarantined = new Set(quarantine.map((q) => q.reader));
 
   for (const reader of readers) {
+    // A quarantined reader stays quarantined until the developer clears it.
+    // Retrying every pass would re-warn forever about a format that hasn't
+    // changed back.
+    if (alreadyQuarantined.has(reader.name)) continue;
+
     let files;
     try {
       files = reader.files(roots[reader.name]);

@@ -54,8 +54,11 @@ export function makeEvent({
     if (sections) event.sections = [...sections];
   }
 
-  // Tombstones and confirmations never carry text.
-  if (text !== undefined && op !== "remove" && op !== "confirm") event.text = text;
+  // Tombstones, confirmations and rejections never carry text. A rejection is
+  // "never say this about me again" — storing the wording would leave the
+  // suppressed claim sitting in a synced journal forever, which is the same
+  // mistake the tombstone rule exists to prevent.
+  if (text !== undefined && !["remove", "confirm", "reject"].includes(op)) event.text = text;
 
   return event;
 }
@@ -194,6 +197,23 @@ const SECTION_ORDER = [
  * A section with no facts is omitted entirely — convention v1 says a missing
  * section means unknown, and an empty heading would imply "none".
  */
+/**
+ * Soft cap per section. Twelve sections is already a real context cost; an
+ * unbudgeted profile becomes a wall the agent skims, and every marginal fact
+ * then costs the good ones attention. When a section is over budget the
+ * least-recently-seen facts are dropped from the *rendering* only — the
+ * journal still holds them, so nothing is lost and raising the cap restores
+ * them.
+ */
+export const SECTION_BUDGET = 12;
+
+function withinBudget(facts) {
+  if (facts.length <= SECTION_BUDGET) return facts;
+  return [...facts]
+    .sort((a, b) => (b.lastSeenAt ?? 0) - (a.lastSeenAt ?? 0))
+    .slice(0, SECTION_BUDGET);
+}
+
 export function renderProfile(state, { name = "", updated = null, existing = "" } = {}) {
   const prior = splitIntoBlocks(existing);
   const priorHeadings = new Set(prior.blocks.map((b) => b.heading));
@@ -239,7 +259,7 @@ export function renderProfile(state, { name = "", updated = null, existing = "" 
       continue;
     }
     out.push(`## ${block.heading}`);
-    for (const fact of facts) out.push(`- ${fact.text}`);
+    for (const fact of withinBudget(facts)) out.push(`- ${fact.text}`);
     out.push(...preserved, "");
     emitted.add(block.heading);
   }
@@ -249,7 +269,7 @@ export function renderProfile(state, { name = "", updated = null, existing = "" 
     const facts = state.sections.get(section);
     if (!facts || facts.length === 0) continue;
     out.push(`## ${section}`);
-    for (const fact of facts) out.push(`- ${fact.text}`);
+    for (const fact of withinBudget(facts)) out.push(`- ${fact.text}`);
     out.push("");
   }
 

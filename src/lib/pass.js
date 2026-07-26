@@ -35,20 +35,35 @@ export function writeState(state, dir = getProfileDir()) {
 export function runPass({ dir = getProfileDir(), now = Date.now(), roots = {}, readers } = {}) {
   const state = readState(dir);
 
+  const previouslyQuarantined = state.quarantined || [];
   const { turns, quarantined, cursors } = readAll({
     ...(readers ? { readers } : {}),
     roots,
     cursors: state.cursors,
+    quarantine: previouslyQuarantined,
   });
+
+  // Sticky, and reported once: a reader that broke stays broken until someone
+  // looks at it, and the developer hears about it the first time only.
+  const knownBroken = new Set(previouslyQuarantined.map((q) => q.reader));
+  const newlyQuarantined = quarantined.filter((q) => !knownBroken.has(q.reader));
+  const allQuarantined = [...previouslyQuarantined, ...newlyQuarantined];
 
   const { candidates, scanned, usable, scans } = extract(turns);
   const marked = markContradictions(candidates, materialize(readJournal(dir)));
   const recorded = recordCandidates(marked, { dir, now });
 
   writeState(
-    { ...state, cursors, lastRunAt: now, quarantined, redaction: summarize(scans) },
+    { ...state, cursors, lastRunAt: now, quarantined: allQuarantined, redaction: summarize(scans) },
     dir
   );
 
-  return { scanned, usable, candidates: recorded.length, quarantined, redaction: summarize(scans) };
+  return {
+    scanned,
+    usable,
+    candidates: recorded.length,
+    // Only the new ones are surfaced; the rest are on record, not news.
+    quarantined: newlyQuarantined,
+    redaction: summarize(scans),
+  };
 }

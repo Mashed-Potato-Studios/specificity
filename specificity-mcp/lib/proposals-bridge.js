@@ -4,15 +4,7 @@
 // for hosts that take context only through tool calls — no hooks, no skills.
 // The loop's rules live in src/lib/proposals.js; nothing is re-implemented here.
 import { runPass, readState, writeState } from "../../src/lib/pass.js";
-import {
-  dueProposals,
-  loadCandidates,
-  accept,
-  decline,
-  never,
-  keepMine,
-  renderBatch,
-} from "../../src/lib/proposals.js";
+import { dueProposals, loadCandidates, applyVerdict, renderBatch } from "../../src/lib/proposals.js";
 
 export const renderProposalBatch = renderBatch;
 
@@ -39,37 +31,8 @@ export function recordAnswer(key, verdict, text) {
     return { ok: false, error: `no pending proposal with key "${key}"` };
   }
 
-  switch (verdict) {
-    case "y":
-      accept(candidate);
-      return { ok: true, message: `Added to ${candidate.section}.` };
-
-    case "edit":
-      if (!text || !text.trim()) {
-        return { ok: false, error: "'edit' needs the developer's own wording in `text`" };
-      }
-      accept(candidate, { text: text.trim() });
-      return { ok: true, message: `Added to ${candidate.section}, in the developer's words.` };
-
-    case "n":
-      decline(candidate);
-      return { ok: true, message: "Deferred. It returns only if the evidence doubles." };
-
-    case "never":
-      never(candidate);
-      return { ok: true, message: "Retired. That suggestion will not come back." };
-
-    case "keep":
-      if (!candidate.contradicts) {
-        return { ok: false, error: "'keep' applies only to a proposal that disputes a stated fact" };
-      }
-      keepMine(candidate);
-      return {
-        ok: true,
-        message: "Kept what the developer stated. The disagreement is recorded, not the replacement.",
-      };
-
-    default:
-      return { ok: false, error: `unknown verdict "${verdict}"` };
-  }
+  // One implementation of the answer semantics, shared with the CLI. These
+  // two surfaces had already drifted once: the bridge refused `keep` without a
+  // contradiction while the CLI accepted it and recorded an empty tension.
+  return applyVerdict(candidate, verdict, { text });
 }

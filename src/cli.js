@@ -333,51 +333,27 @@ async function answerCommand(key, verdict, rest) {
     process.exit(1);
   }
 
-  switch (verdict) {
-    case "y":
-    case "yes":
-    case "add":
-      proposals.accept(candidate);
-      console.log(`Added to ${candidate.section}.`);
-      break;
-    case "e":
-    case "edit": {
-      const text = rest.join(" ").trim();
-      if (!text) {
-        console.error('Usage: specificity answer <key> edit "your wording"');
-        process.exit(1);
-      }
-      proposals.accept(candidate, { text });
-      console.log(`Added to ${candidate.section}, in your words.`);
-      break;
-    }
-    case "n":
-    case "no":
-      proposals.decline(candidate);
-      console.log("Left it. You'll only see it again if the evidence doubles.");
-      break;
-    case "never":
-      proposals.never(candidate);
-      console.log("Won't suggest that again.");
-      break;
-    case "k":
-    case "keep":
-      proposals.keepMine(candidate);
-      console.log("Kept what you said. Noted that the observation disagrees.");
-      break;
-    default:
-      console.error("Verdict must be one of: y, n, never, k, edit");
-      process.exit(1);
+  const result = proposals.applyVerdict(candidate, verdict, { text: rest.join(" ") });
+  if (!result.ok) {
+    console.error(result.error);
+    process.exit(1);
   }
+  console.log(result.message);
 }
 
 /** Machine-readable pending proposals, for an agent to render in-session. */
 async function pendingCommand() {
-  const { runPass, readState } = await import("./lib/pass.js");
+  const { runPass, readState, writeState } = await import("./lib/pass.js");
   const { dueProposals } = await import("./lib/proposals.js");
 
   runPass();
-  const { proposals, reason } = dueProposals({ lastBatchAt: readState().lastBatchAt });
+  const state = readState();
+  const { proposals, reason } = dueProposals({ lastBatchAt: state.lastBatchAt });
+
+  // Handing a batch to an agent counts as asking. Without this the skill path
+  // re-offers the same proposals every session and the 24h throttle is a lie.
+  if (proposals.length) writeState({ ...state, lastBatchAt: Date.now() });
+
   console.log(JSON.stringify({ reason, proposals }, null, 2));
 }
 

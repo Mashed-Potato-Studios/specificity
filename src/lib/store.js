@@ -1,12 +1,20 @@
 // Storage drivers and the contract they satisfy.
 // Spec: docs/SPEC-V2.md — "Storage driver contract".
 //
-// Four operations, no locking and no compare-and-swap. That is deliberate: a
-// git repo, a synced folder, a bucket and a future hosted service can all
-// satisfy it without emulating semantics they lack. Divergence is expected and
-// resolved by the journal, not prevented here.
+// The required contract is four operations — get, put, list, delete — with no
+// locking and no compare-and-swap. That is deliberate: a git repo, a synced
+// folder, a bucket and a future hosted service can all satisfy it without
+// emulating semantics they lack. Divergence is expected and resolved by the
+// journal, not prevented here.
+//
+// `capabilities`, `versions()` and `readVersion()` are OPTIONAL. A driver that
+// omits them is fully conformant; the core checks `capabilities.history`
+// before offering rollback and degrades cleanly when it is absent. They exist
+// to serve the failure posture's "offer the previous version where the driver
+// has history".
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { execFileSync } from "child_process";
 
 /** Bumped only when the driver interface itself changes. */
@@ -110,8 +118,11 @@ export function fsDriver({ root, keepVersions = 10 }) {
   };
 }
 
+// Counter plus process entropy: the counter alone is per-process, so two
+// processes writing in the same millisecond would still collide.
 let versionSeq = 0;
-const nextSeq = () => String(versionSeq++).padStart(6, "0");
+const nextSeq = () =>
+  `${String(versionSeq++).padStart(6, "0")}-${crypto.randomBytes(3).toString("hex")}`;
 
 function prune(versionsDir, key, keep) {
   const kept = fs
@@ -195,6 +206,8 @@ export function gitDriver({ root, remote = null, branch = "HEAD", commitMessage 
       } catch {
         /* no-op */
       }
+      // Match put: a delete that never reaches the remote isn't a delete.
+      if (remote) git("push", "--quiet", remote, branch);
     },
 
     async versions(key) {

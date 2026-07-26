@@ -162,6 +162,19 @@ test("never suppresses the class permanently", () => {
   assert.deepStrictEqual(dueProposals({ dir, now: 4000 }).proposals, []);
 });
 
+test("never survives a wiped candidate store, because it lives in the journal", () => {
+  const dir = tmp();
+  recordCandidates([candidate()], { dir, now: 1000 });
+  never(only(dir), { dir, now: 2000 });
+
+  // Simulate another machine's last-writer-wins push clobbering the local
+  // candidate store. The journal — which merges — must still suppress it.
+  fs.unlinkSync(path.join(dir, "_observations.jsonl"));
+  recordCandidates([candidate()], { dir, now: 3000 });
+
+  assert.deepStrictEqual(loadCandidates(dir), [], "a silenced class came back");
+});
+
 test("a rejection is recorded as data, not a deletion", () => {
   const dir = tmp();
   recordCandidates([candidate()], { dir, now: 1000 });

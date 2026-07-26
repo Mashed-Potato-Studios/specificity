@@ -160,6 +160,21 @@ test("ranks the projects actually worked in", () => {
   assert.match(candidate.text, /beta/);
 });
 
+test("a project directory that looks sensitive is left out", () => {
+  const turns = [
+    ...Array.from({ length: 6 }, (_, i) => at(9, `a${i}`, { cwd: "/Users/dev/alpha", session: "s1" })),
+    ...Array.from({ length: 4 }, (_, i) => at(9, `c${i}`, { cwd: "/Users/dev/gamma", session: "s3" })),
+    ...Array.from({ length: 6 }, (_, i) =>
+      at(9, `b${i}`, { cwd: "/Users/dev/someone@example.com", session: "s2" })
+    ),
+  ];
+  const candidate = projectSpread(turns);
+  assert.ok(candidate, "the clean projects should still produce a candidate");
+  assert.match(candidate.text, /alpha/);
+  assert.ok(!candidate.text.includes("example.com"), "an email-shaped directory leaked");
+  assert.ok(!JSON.stringify(candidate.evidence).includes("example.com"));
+});
+
 test("stays silent with a single project", () => {
   const turns = [at(9, "x"), at(9, "y")];
   assert.strictEqual(projectSpread(turns), null);
@@ -192,6 +207,27 @@ test("evidence never carries a secret", () => {
   }
   const { candidates } = extract(turns);
   assert.ok(!JSON.stringify(candidates).includes("sk-abcdefghijklmnop"));
+});
+
+test("the session bar applies to the statistical extractors too", () => {
+  // A single long session can produce plenty of occurrences. Without the
+  // sessions half of the bar, rhythm and terseness would propose from it.
+  const turns = [];
+  for (let i = 0; i < 20; i++) turns.push(at(6, `approve ${i}`, { session: "only-one" }));
+  for (let i = 0; i < 10; i++) {
+    turns.push(at(7, `please look at the failing integration test and explain what broke ${i}`, { session: "only-one" }));
+  }
+  const { candidates } = extract(turns);
+  assert.deepStrictEqual(candidates, [], "one session must not clear the bar");
+});
+
+test("two sessions do clear it", () => {
+  const turns = [];
+  for (let i = 0; i < 20; i++) turns.push(at(6, `approve ${i}`, { session: `s${i % 2}` }));
+  for (let i = 0; i < 10; i++) {
+    turns.push(at(7, `please look at the failing integration test and explain what broke ${i}`, { session: `s${i % 2}` }));
+  }
+  assert.ok(extract(turns).candidates.length > 0);
 });
 
 test("an empty corpus yields nothing and does not throw", () => {

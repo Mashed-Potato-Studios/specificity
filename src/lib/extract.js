@@ -140,6 +140,14 @@ export function projectSpread(turns) {
     if (!turn.cwd) continue;
     const project = turn.cwd.split("/").filter(Boolean).pop();
     if (!project) continue;
+
+    // `cwd` never went through the redactor — it isn't the developer's typed
+    // words, so nothing upstream scanned it. A directory name can carry an
+    // employer, a client, or a person's name, and this fact gets synced. Same
+    // argument that keeps hostnames out of the journal.
+    const scan = scanTurn(project);
+    if (scan.action !== "keep" || scan.text !== project) continue;
+
     counts.set(project, (counts.get(project) || 0) + 1);
   }
   if (counts.size < 2) return null;
@@ -174,8 +182,11 @@ export function extract(rawTurns) {
     ...repeatedPhrases(usable),
   ].filter(Boolean);
 
+  // Both halves of the bar, for every extractor. An earlier form of this
+  // reduced to `sessions >= 1`, which silently let rhythm, terseness and
+  // project spread propose from a single session.
   const cleared = candidates.filter(
-    (c) => c.occurrences >= MIN_OCCURRENCES && c.sessions >= Math.min(MIN_SESSIONS, 1) + 0
+    (c) => c.occurrences >= MIN_OCCURRENCES && c.sessions >= MIN_SESSIONS
   );
 
   return { candidates: cleared, scanned: rawTurns.length, usable: usable.length, scans };

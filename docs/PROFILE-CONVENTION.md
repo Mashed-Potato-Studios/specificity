@@ -46,15 +46,32 @@ prior, never a cage.
 ## Phrase Map
 <!-- "what they said" → what they meant -->
 ## Communication Style
+## Interaction Preferences
+## Request Patterns
 ## Working Habits
+## Rhythm & Context
+## Anti-patterns
 ## Technical Background
 ## Definition of Done
 ## Misunderstanding Log
 ```
 
+Four of these are optional additions introduced after version 1 and require no
+version bump, per *Compatibility and evolution* below:
+
+- **Interaction Preferences** — standing behavioural instructions ("one
+  question at a time"), where Communication Style is description.
+- **Request Patterns** — recurring *shapes* of request and what they mean, as
+  distinct from Phrase Map's word → meaning.
+- **Rhythm & Context** — when and where the developer works.
+- **Anti-patterns** — what reliably irritates them. Distinct from the
+  Misunderstanding Log, which records being *wrong* rather than *irritating*.
+
 Rules:
 
 - One fact per line; short, plain Markdown.
+- Write only sections that have content. A missing section means unknown; an
+  empty heading claims "none", which is a different and usually false claim.
 - Phrase mappings use `"<developer wording>" → <confirmed intent>`.
 - Preserve the developer's spelling and wording.
 - Unknown sections are valid extensions. Consumers must preserve them.
@@ -141,3 +158,21 @@ their own profile.
 - Tools may add files under `~/.specificity/`; filenames beginning with an
   underscore are reserved for tool-local state and are not part of this
   convention.
+
+### Reserved `_` filenames in the reference implementation
+
+Consumers must ignore these and must not treat them as profile content. They
+are listed so implementers know what they will encounter, not so anyone
+depends on them:
+
+| File | Holds |
+|---|---|
+| `_journal.jsonl` | Append-only log of every profile change; the profile is materialized from it |
+| `_observations.jsonl` | Candidate facts awaiting the developer's confirmation |
+| `_materialized.md` | Snapshot of what was last written, used to detect hand-edits |
+| `_key` | Derived encryption key for the portable profile. Never the recovery phrase |
+| `_machine` | Opaque per-install id, deliberately not a hostname |
+| `_pass.json` | Read cursors and observation-pass state |
+
+A profile remains fully readable with all of these deleted; only unconfirmed
+candidates and sync state are lost.

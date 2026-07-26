@@ -10,6 +10,7 @@ import {
   parseProfile,
   reconcile,
   compact,
+  SECTION_BUDGET,
 } from "../src/lib/journal.js";
 
 let passed = 0;
@@ -61,6 +62,13 @@ test("a tombstone carries the hash but never the text", () => {
   assert.strictEqual(e.factHash, factHash("something private about me"));
   assert.strictEqual(e.text, undefined);
   assert.ok(!JSON.stringify(e).includes("private"));
+});
+
+test("a rejection carries the hash but never the text", () => {
+  const e = makeEvent({ op: "reject", text: "starts work at dawn", machine: LAPTOP, ts: 4 });
+  assert.strictEqual(e.factHash, factHash("starts work at dawn"));
+  assert.strictEqual(e.text, undefined);
+  assert.ok(!JSON.stringify(e).includes("dawn"));
 });
 
 test("rejects an unknown op", () => {
@@ -359,6 +367,22 @@ test("an emptied managed section drops its stale bullets", () => {
   ]);
   const out = renderProfile(state, { existing: "## Rhythm\n- wakes early\n" });
   assert.ok(!out.includes("wakes early"));
+});
+
+test("a section over budget renders only its most recent facts", () => {
+  const events = [];
+  for (let i = 0; i < 20; i++) events.push(add(`fact number ${i}`, "Phrase Map", LAPTOP, i));
+  const out = renderProfile(materialize(events));
+  const bullets = out.split("\n").filter((l) => l.startsWith("- "));
+  assert.strictEqual(bullets.length, SECTION_BUDGET);
+  assert.ok(out.includes("fact number 19"), "newest should survive the budget");
+  assert.ok(!out.includes("fact number 0"), "oldest should be trimmed");
+});
+
+test("the budget trims the rendering, never the journal", () => {
+  const events = [];
+  for (let i = 0; i < 20; i++) events.push(add(`fact number ${i}`, "Phrase Map", LAPTOP, i));
+  assert.strictEqual(materialize(events).sections.get("Phrase Map").length, 20);
 });
 
 test("the profile name is carried through", () => {

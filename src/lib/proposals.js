@@ -6,7 +6,7 @@
 import fs from "fs";
 import path from "path";
 import { getProfileDir } from "../../hooks/specificity-config.js";
-import { factHash, makeEvent } from "./journal.js";
+import { factHash, makeEvent, materialize } from "./journal.js";
 import { appendEvents, readJournal, materializeToDisk } from "./sync.js";
 import { machineId } from "./identity.js";
 
@@ -94,12 +94,18 @@ export function recordCandidates(candidates, { dir = getProfileDir(), now = Date
   const existing = new Map(loadCandidates(dir).map((c) => [c.key, c]));
   const recorded = [];
 
+  // Rejections live in the journal, which merges across machines. The local
+  // candidate store is last-writer-wins, so consulting only it would let
+  // another machine's push resurrect a class the developer silenced for good.
+  const rejected = materialize(readJournal(dir)).rejected;
+
   for (const candidate of candidates) {
     const key = candidateKey(candidate);
     const prior = existing.get(key);
 
     // `never` is permanent: the whole pattern class stays suppressed.
     if (prior?.status === "rejected") continue;
+    if (rejected.has(factHash(candidate.text))) continue;
 
     const record = {
       key,
@@ -226,6 +232,49 @@ export function keepMine(candidate, { dir = getProfileDir(), now = Date.now() } 
     dir,
     now
   );
+}
+
+/**
+ * Apply a verdict to a candidate. The single place any surface turns an answer
+ * into an action — the CLI, the MCP bridge and anything later all route here,
+ * so the trust boundary and the answer semantics cannot drift between them.
+ */
+export function applyVerdict(candidate, verdict, { text = null, dir = getProfileDir(), now = Date.now() } = {}) {
+  switch (verdict) {
+    case "y":
+    case "yes":
+    case "add":
+      accept(candidate, { dir, now });
+      return { ok: true, message: `Added to ${candidate.section}.` };
+
+    case "e":
+    case "edit":
+      if (!text || !text.trim()) {
+        return { ok: false, error: "'edit' needs the developer's own wording" };
+      }
+      accept(candidate, { dir, now, text: text.trim() });
+      return { ok: true, message: `Added to ${candidate.section}, in your words.` };
+
+    case "n":
+    case "no":
+      decline(candidate, { dir, now });
+      return { ok: true, message: "Left it. It returns only if the evidence doubles." };
+
+    case "never":
+      never(candidate, { dir, now });
+      return { ok: true, message: "Won't suggest that again." };
+
+    case "k":
+    case "keep":
+      if (!candidate.contradicts) {
+        return { ok: false, error: "'keep' applies only to a proposal that disputes a stated fact" };
+      }
+      keepMine(candidate, { dir, now });
+      return { ok: true, message: "Kept what you said. The disagreement is recorded." };
+
+    default:
+      return { ok: false, error: `unknown verdict "${verdict}"` };
+  }
 }
 
 /** Render a batch the way the prototype settled on: claim, count, one quote. */
