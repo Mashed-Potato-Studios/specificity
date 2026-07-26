@@ -115,6 +115,16 @@ test("an edited answer is stored as the developer's own words", () => {
   assert.strictEqual(facts[0].origin, "stated", "their wording outranks ours");
 });
 
+test("accepting writes the profile the agent reads, not just the journal", () => {
+  const dir = tmp();
+  recordCandidates([candidate()], { dir, now: 1000 });
+  accept(only(dir), { dir, now: 2000 });
+
+  const profile = fs.readFileSync(path.join(dir, "PROFILE.md"), "utf8");
+  assert.match(profile, /## Rhythm & Context/);
+  assert.match(profile, /Often starts work between 6am and 8am/);
+});
+
 test("a confirmed candidate is not shown again", () => {
   const dir = tmp();
   recordCandidates([candidate()], { dir, now: 1000 });

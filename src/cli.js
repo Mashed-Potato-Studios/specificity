@@ -45,6 +45,9 @@ Usage:
 
   specificity review           Show what has been noticed about you
   specificity review redactions  What was stripped (counts only)
+  specificity pending          Pending proposals as JSON (for agents)
+  specificity answer <key> <y|n|never|k|edit "text">
+                               Record your answer to a proposal
 
 Profile location: ${getProfileDir()}`);
 }
@@ -265,6 +268,68 @@ async function reviewCommand(sub) {
   writeState({ ...state, lastBatchAt: Date.now() });
 }
 
+/**
+ * Record the developer's answer to a proposal.
+ * Every path from a candidate to the profile runs through here, and every one
+ * of them requires an answer the developer actually gave.
+ */
+async function answerCommand(key, verdict, rest) {
+  const proposals = await import("./lib/proposals.js");
+
+  const candidate = proposals.loadCandidates().find((c) => c.key === key);
+  if (!candidate) {
+    console.error(`No pending proposal with key "${key}". Run \`specificity review\` first.`);
+    process.exit(1);
+  }
+
+  switch (verdict) {
+    case "y":
+    case "yes":
+    case "add":
+      proposals.accept(candidate);
+      console.log(`Added to ${candidate.section}.`);
+      break;
+    case "e":
+    case "edit": {
+      const text = rest.join(" ").trim();
+      if (!text) {
+        console.error('Usage: specificity answer <key> edit "your wording"');
+        process.exit(1);
+      }
+      proposals.accept(candidate, { text });
+      console.log(`Added to ${candidate.section}, in your words.`);
+      break;
+    }
+    case "n":
+    case "no":
+      proposals.decline(candidate);
+      console.log("Left it. You'll only see it again if the evidence doubles.");
+      break;
+    case "never":
+      proposals.never(candidate);
+      console.log("Won't suggest that again.");
+      break;
+    case "k":
+    case "keep":
+      proposals.keepMine(candidate);
+      console.log("Kept what you said. Noted that the observation disagrees.");
+      break;
+    default:
+      console.error("Verdict must be one of: y, n, never, k, edit");
+      process.exit(1);
+  }
+}
+
+/** Machine-readable pending proposals, for an agent to render in-session. */
+async function pendingCommand() {
+  const { runPass, readState } = await import("./lib/pass.js");
+  const { dueProposals } = await import("./lib/proposals.js");
+
+  runPass();
+  const { proposals, reason } = dueProposals({ lastBatchAt: readState().lastBatchAt });
+  console.log(JSON.stringify({ reason, proposals }, null, 2));
+}
+
 const args = process.argv.slice(2);
 const cmd = args[0];
 
@@ -284,6 +349,12 @@ switch (cmd) {
     break;
   case "review":
     await reviewCommand(args[1]);
+    break;
+  case "pending":
+    await pendingCommand();
+    break;
+  case "answer":
+    await answerCommand(args[1], args[2], args.slice(3));
     break;
   case "install":
     install();

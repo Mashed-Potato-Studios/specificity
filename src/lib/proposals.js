@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import { getProfileDir } from "../../hooks/specificity-config.js";
 import { factHash, makeEvent } from "./journal.js";
-import { appendEvents } from "./sync.js";
+import { appendEvents, readJournal, materializeToDisk } from "./sync.js";
 import { machineId } from "./identity.js";
 
 export const OBSERVATIONS_FILE = "_observations.jsonl";
@@ -187,6 +187,9 @@ export function accept(candidate, { dir = getProfileDir(), now = Date.now(), tex
     );
   }
   appendEvents(events, dir);
+  // Rewrite the profile immediately. An accepted fact the agent can't read
+  // until the next sync isn't accepted from the developer's point of view.
+  materializeToDisk(readJournal(dir), dir);
   setStatus(candidate.key, { status: "confirmed" }, dir, now);
   return events;
 }

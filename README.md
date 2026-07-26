@@ -74,6 +74,55 @@ For hosts that take context only through tool calls (no hooks, no skills), `spec
 npm run mcp   # stdio MCP server; wire it into your host's MCP config
 ```
 
+## Portable identity (v2)
+
+Your profile can follow you to any machine. A twelve-word recovery phrase
+derives an encryption key; the profile is encrypted **on your machine** and
+stored wherever you choose — a private git repo, a synced folder, anywhere you
+own. No Specificity server exists, and no plaintext ever leaves your machine.
+
+```sh
+npx specificity key create              # shows your phrase once — write it down
+npx specificity sync ~/Dropbox/spec     # or a private git repo
+```
+
+On a machine that has never seen your profile:
+
+```sh
+npx specificity key restore "<your twelve words>"
+npx specificity pull ~/Dropbox/spec
+```
+
+Losing the phrase costs nothing while any machine still has the profile —
+re-key and push. Losing the phrase *and* every machine means the synced copy
+cannot be recovered; that is the trade, and setup says so at the moment it
+matters. Everything on the crypto path is open source so the claim can be
+checked rather than trusted.
+
+## Continuous learning
+
+Specificity keeps learning how you actually work. A sub-second pass reads the
+transcripts your agent already writes, and proposes what it noticed:
+
+```sh
+npx specificity review        # what's been noticed, and the answers
+npx specificity review redactions   # what was stripped — counts, never content
+```
+
+**Nothing is ever written without your answer.** Proposals batch at the end of
+a session, at most three a day, and carry their evidence so you can judge a
+claim about yourself without opening a transcript. Declining means "not now";
+it returns only if the evidence doubles. `never` retires the suggestion for
+good.
+
+Only your own typed words are read — tool output, file contents, and pasted
+material are excluded, and credentials are dropped before anything is stored.
+
+**Coverage is honest:** Specificity *understands* you on every host, and
+*measures* you where the host keeps a local record. Claude Code and pi ship
+with readers. Hosts that keep no local transcript still learn through the
+in-session surface; they just contribute no statistics.
+
 ## Open profile convention
 
 `~/.specificity/` is an open, agent-neutral Markdown convention for describing the person behind the code. Any agent may read it; no Specificity runtime is required. See [The Specificity Profile Convention](docs/PROFILE-CONVENTION.md) for the versioned format, precedence, privacy rules, and consumer contract.

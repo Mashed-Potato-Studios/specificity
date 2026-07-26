@@ -56,6 +56,22 @@ Walk these in order. Skip any the developer waves off.
    the rest.
 7. **Definition of done** — what "finished" means to them: tests? types?
    deployed? "it runs on my machine"?
+8. **Interaction preferences** — standing rules for how you should behave
+   with them, phrased as instructions rather than description: one question
+   at a time? recommend before asking? explain only when asked? ship the
+   lazy version first? *Recommended: "One question at a time, always with a
+   recommendation."*
+9. **Anti-patterns** — what reliably annoys them about working with an AI.
+   The negative space, and different from a misunderstanding: this is about
+   being irritating, not about being wrong. *Recommended: "Asking several
+   questions at once; re-explaining things I already know."*
+
+**Only these two of the newer sections are interviewed.** Request Patterns
+and Rhythm & Context are deliberately not asked: people misreport their own
+recurring phrasings and working hours, and observation measures both
+accurately. Asking would seed the profile with confident wrong facts, which
+is the failure this is built to avoid. They fill in on their own — tell the
+developer that once, and move on.
 
 ## Write the profile
 
@@ -71,15 +87,23 @@ Write PROFILE.md with exactly this skeleton, filled from the interview:
 ## Phrase Map
 <!-- "what they said" → what they meant -->
 ## Communication Style
+## Interaction Preferences
 ## Working Habits
 ## Technical Background
 ## Definition of Done
+## Anti-patterns
 ## Misunderstanding Log
 <!-- appended by the specificity skill when it gets something wrong -->
 ```
 
 Every entry is one line. No prose paragraphs — this file is read every
 session, so it's an index, not a memoir.
+
+**Write only the sections that have content.** A missing section means
+unknown; an empty heading implies "none", which is a different and wrong
+claim. Request Patterns and Rhythm & Context therefore do not appear at
+setup — they arrive later, from observation, once there is something true to
+put in them.
 
 ## Finish
 
