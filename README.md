@@ -57,11 +57,25 @@ Specificity also ships as an npm package with a CLI and session hooks, so it wor
 
 ```sh
 npx specificity profile        # show your profile + experience
-npx specificity profile reset  # delete both files, start over
+npx specificity profile reset  # delete the profile, journal and observations
 npx specificity version
+
+npx specificity key create     # a recovery phrase for the portable profile
+npx specificity key restore    # …on a machine that has never seen it
+npx specificity key forget     # log this machine out; profile stays put
+npx specificity key status
+
+npx specificity sync <dest>    # push, encrypted, to a folder or git repo you own
+npx specificity pull <dest>    # restore onto a new machine
+npx specificity rollback <dest> [list|<version>]
+
+npx specificity review         # what's been noticed about you
+npx specificity review redactions
+npx specificity pending        # the same batch as JSON, for agents
+npx specificity answer <key> <y|n|never|k|edit "text">
 ```
 
-The hooks activate the mode at session start and show `[SPECIFICITY]` in the status line while it's on. Your profile lives at `~/.specificity/` (override with `SPECIFICITY_PROFILE_DIR`) and is the single source of truth shared across every agent — only the ephemeral "active" flag is per-agent, so Claude Code, Codex, Copilot, and Qoder all read and write the same you.
+The hooks activate the mode at session start, run the observation pass, and show `[SPECIFICITY]` in the status line while it's on. Your profile lives at `~/.specificity/` (override with `SPECIFICITY_PROFILE_DIR`) and is the single source of truth shared across every agent — only the ephemeral "active" flag is per-agent, so Claude Code, Codex, Copilot, and Qoder all read and write the same you.
 
 ## MCP server
 
@@ -130,4 +144,27 @@ in-session surface; they just contribute no statistics.
 
 ## Status
 
-Early development.
+**v2.** The profile is portable and continuously learning: a recovery phrase
+carries it between machines, and an observation pass proposes what it notices
+from the transcripts your agent already writes.
+
+Everything is open source, MIT — the skills, the CLI, the hooks, the MCP server,
+the crypto, the observation pass, the storage drivers, and the convention. Not
+as a stance about business models, but because a privacy claim you cannot read
+the code for is not a claim. Nothing is held back.
+
+Not yet published to npm; install from a clone for now (see **Install**).
+
+**Contributions welcome**, and the design is written down rather than implied:
+
+- [`docs/SPEC-V2.md`](docs/SPEC-V2.md) — what v2 is and why each decision went
+  the way it did.
+- [`docs/PROFILE-CONVENTION.md`](docs/PROFILE-CONVENTION.md) — the open format,
+  implementable by any agent without this runtime.
+- [`docs/VISION.md`](docs/VISION.md) — the thesis, and the hard boundaries that
+  don't move.
+
+Good first contributions: a transcript reader for another host (the interface is
+public, and Codex, Cursor and Antigravity are deliberately unshipped), a storage
+driver (S3/R2 is documented and unimplemented), or a dialect pack authored and
+reviewed by people of that culture.

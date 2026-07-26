@@ -11,5 +11,4 @@ yarn-error.log*
 .env.*.local
 /tmp/
 docs/WEBSITE-SPEC.md
-docs/SPEC-V2.md
 .wayfinder/

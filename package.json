@@ -1,6 +1,6 @@
 {
   "name": "specificity",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Agent skills that make AI understand the individual developer — language, dialect, habits, stack preferences. One global profile, every project.",
   "bin": {
     "specificity": "src/cli.js"
@@ -20,7 +20,13 @@
     "cli": "node src/cli.js",
     "mcp": "node specificity-mcp/index.js"
   },
-  "keywords": ["agent-skills", "ai-coding", "developer-profile", "dialect", "preferences"],
+  "keywords": [
+    "agent-skills",
+    "ai-coding",
+    "developer-profile",
+    "dialect",
+    "preferences"
+  ],
   "license": "MIT",
   "type": "module",
   "engines": {
