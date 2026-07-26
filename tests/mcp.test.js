@@ -198,6 +198,86 @@ test("callTool returns a friendly message for an unknown tool", () => {
   if (!callTool("nope", {}).content[0].text.includes("Unknown tool")) throw new Error("no unknown-tool handling");
 });
 
+// --- the observation loop over MCP -----------------------------------------
+// Spec: docs/SPEC-V2.md — "Confirmation" (the pass stages; every surface renders).
+
+const { recordCandidates, loadCandidates } = await import("../src/lib/proposals.js");
+const { materialize } = await import("../src/lib/journal.js");
+const { readJournal } = await import("../src/lib/sync.js");
+
+function seedCandidate(overrides = {}) {
+  recordCandidates(
+    [
+      {
+        kind: "rhythm",
+        section: "Rhythm & Context",
+        text: "Often starts work between 6am and 8am",
+        evidence: ["19 of 60 prompts, 4 sessions"],
+        occurrences: 19,
+        sessions: 4,
+        ...overrides,
+      },
+    ],
+    { dir: tmpDir, now: Date.now() }
+  );
+  return loadCandidates(tmpDir).find((c) => c.kind === (overrides.kind || "rhythm"));
+}
+
+test("both observation tools are exposed", () => {
+  const names = TOOLS.map((t) => t.name);
+  for (const expected of ["get_pending_proposals", "answer_proposal"]) {
+    if (!names.includes(expected)) throw new Error(`${expected} not exposed`);
+  }
+});
+
+test("answer_proposal without confirmed writes nothing", () => {
+  const candidate = seedCandidate({ kind: "gate-test" });
+  const before = readJournal(tmpDir).length;
+  const r = callTool("answer_proposal", { key: candidate.key, verdict: "y", confirmed: false });
+  if (!r.content[0].text.includes("Not recorded")) throw new Error("gate did not refuse");
+  eq(readJournal(tmpDir).length, before, "unconfirmed answer must not write");
+});
+
+test("answer_proposal with confirmed:true records the fact", () => {
+  const candidate = seedCandidate({ kind: "accept-test", text: "Reviews work in the morning" });
+  callTool("answer_proposal", { key: candidate.key, verdict: "y", confirmed: true });
+  const facts = materialize(readJournal(tmpDir)).sections.get("Rhythm & Context") || [];
+  if (!facts.some((f) => f.text === "Reviews work in the morning")) {
+    throw new Error("confirmed answer was not written");
+  }
+});
+
+test("an edited answer is stored as the developer's own words", () => {
+  const candidate = seedCandidate({ kind: "edit-test", text: "Machine wording" });
+  callTool("answer_proposal", {
+    key: candidate.key,
+    verdict: "edit",
+    text: "my own phrasing",
+    confirmed: true,
+  });
+  const facts = materialize(readJournal(tmpDir)).sections.get("Rhythm & Context") || [];
+  const written = facts.find((f) => f.text === "my own phrasing");
+  if (!written) throw new Error("edited wording not written");
+  eq(written.origin, "stated", "the developer's wording outranks the observation");
+});
+
+test("edit without wording is refused", () => {
+  const candidate = seedCandidate({ kind: "edit-empty" });
+  const r = callTool("answer_proposal", { key: candidate.key, verdict: "edit", confirmed: true });
+  if (!r.content[0].text.includes("Not recorded")) throw new Error("empty edit was accepted");
+});
+
+test("keep is refused when nothing is being disputed", () => {
+  const candidate = seedCandidate({ kind: "keep-test" });
+  const r = callTool("answer_proposal", { key: candidate.key, verdict: "keep", confirmed: true });
+  if (!r.content[0].text.includes("Not recorded")) throw new Error("keep accepted without a contradiction");
+});
+
+test("an unknown key is refused rather than guessed at", () => {
+  const r = callTool("answer_proposal", { key: "nope:123", verdict: "y", confirmed: true });
+  if (!r.content[0].text.includes("Not recorded")) throw new Error("unknown key was accepted");
+});
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

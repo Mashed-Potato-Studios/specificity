@@ -69,6 +69,7 @@ For hosts that take context only through tool calls (no hooks, no skills), `spec
 
 - **Read** — `get_profile`, `get_experience`, `get_phrase_intent`, `get_stack_preference`, `get_preferred_stack`.
 - **Learn** (gated, two-step) — `propose_correction` validates a phrase or stack entry and returns a normalized preview to show you; `apply_correction` writes it only with `confirmed: true`, which the agent may set solely after you approve the exact line. Writes are atomic and validated against the profile convention, so the loop that lets the agent learn from a misunderstanding works even where skills can't run.
+- **Observe** (gated) — `get_pending_proposals` runs the observation pass and returns the throttled batch to show you at the end of a session; `answer_proposal` records your answer (`y`, `n`, `never`, `keep`, or `edit` with your own wording) and only with `confirmed: true`. This is what keeps hosts with no hooks and no skills a first-class part of the learning loop.
 
 ```sh
 npm run mcp   # stdio MCP server; wire it into your host's MCP config
