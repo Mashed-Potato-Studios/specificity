@@ -26,7 +26,18 @@ try {
   // Silent fail -- flag is best-effort
 }
 
-// 2. Emit the specificity ruleset + profile context
+// 2. Run the observation pass. Measured at ~0.4s over a full history, and
+//    cursors make repeat runs milliseconds, so this is cheap enough to do on
+//    every session start. It only stages candidates — nothing is written to
+//    the profile without the developer answering.
+try {
+  const { runPass } = await import("../src/lib/pass.js");
+  runPass();
+} catch (e) {
+  // Observation is a bonus, never a reason a session fails to start.
+}
+
+// 3. Emit the specificity ruleset + profile context
 let output = getSpecificityInstructions();
 
 try {

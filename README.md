@@ -69,10 +69,60 @@ For hosts that take context only through tool calls (no hooks, no skills), `spec
 
 - **Read** — `get_profile`, `get_experience`, `get_phrase_intent`, `get_stack_preference`, `get_preferred_stack`.
 - **Learn** (gated, two-step) — `propose_correction` validates a phrase or stack entry and returns a normalized preview to show you; `apply_correction` writes it only with `confirmed: true`, which the agent may set solely after you approve the exact line. Writes are atomic and validated against the profile convention, so the loop that lets the agent learn from a misunderstanding works even where skills can't run.
+- **Observe** (gated) — `get_pending_proposals` runs the observation pass and returns the throttled batch to show you at the end of a session; `answer_proposal` records your answer (`y`, `n`, `never`, `keep`, or `edit` with your own wording) and only with `confirmed: true`. This is what keeps hosts with no hooks and no skills a first-class part of the learning loop.
 
 ```sh
 npm run mcp   # stdio MCP server; wire it into your host's MCP config
 ```
+
+## Portable identity (v2)
+
+Your profile can follow you to any machine. A twelve-word recovery phrase
+derives an encryption key; the profile is encrypted **on your machine** and
+stored wherever you choose — a private git repo, a synced folder, anywhere you
+own. No Specificity server exists, and no plaintext ever leaves your machine.
+
+```sh
+npx specificity key create              # shows your phrase once — write it down
+npx specificity sync ~/Dropbox/spec     # or a private git repo
+```
+
+On a machine that has never seen your profile:
+
+```sh
+npx specificity key restore "<your twelve words>"
+npx specificity pull ~/Dropbox/spec
+```
+
+Losing the phrase costs nothing while any machine still has the profile —
+re-key and push. Losing the phrase *and* every machine means the synced copy
+cannot be recovered; that is the trade, and setup says so at the moment it
+matters. Everything on the crypto path is open source so the claim can be
+checked rather than trusted.
+
+## Continuous learning
+
+Specificity keeps learning how you actually work. A sub-second pass reads the
+transcripts your agent already writes, and proposes what it noticed:
+
+```sh
+npx specificity review        # what's been noticed, and the answers
+npx specificity review redactions   # what was stripped — counts, never content
+```
+
+**Nothing is ever written without your answer.** Proposals batch at the end of
+a session, at most three a day, and carry their evidence so you can judge a
+claim about yourself without opening a transcript. Declining means "not now";
+it returns only if the evidence doubles. `never` retires the suggestion for
+good.
+
+Only your own typed words are read — tool output, file contents, and pasted
+material are excluded, and credentials are dropped before anything is stored.
+
+**Coverage is honest:** Specificity *understands* you on every host, and
+*measures* you where the host keeps a local record. Claude Code and pi ship
+with readers. Hosts that keep no local transcript still learn through the
+in-session surface; they just contribute no statistics.
 
 ## Open profile convention
 

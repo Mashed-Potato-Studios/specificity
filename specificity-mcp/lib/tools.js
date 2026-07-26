@@ -13,6 +13,7 @@ import {
   validateCorrection,
   applyCorrection,
 } from "./profile.js";
+import { pendingProposals, recordAnswer, renderProposalBatch } from "./proposals-bridge.js";
 
 export const TOOLS = [
   {
@@ -71,6 +72,34 @@ export const TOOLS = [
         confirmed: { type: "boolean", description: "Must be true. Set only after the developer explicitly approved this line." },
       },
       required: ["type", "content", "confirmed"],
+    },
+  },
+  {
+    name: "get_pending_proposals",
+    description:
+      "Get what Specificity has noticed about the developer and is waiting to ask about. Runs the observation pass and returns the throttled batch — show it to the developer at the END of a session, never mid-task. Returns nothing when throttled or when there is nothing new; that silence is the correct output most sessions. Writes no profile facts.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "answer_proposal",
+    description:
+      "GATED — record the developer's answer to a proposal from get_pending_proposals. Only call with confirmed:true AFTER the developer has explicitly answered. Never infer the answer. 'y' adds the fact, 'n' defers it until the evidence doubles, 'never' retires the suggestion, 'edit' stores the developer's own wording, and 'keep' (contradictions only) leaves what they stated standing while recording the disagreement.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "The proposal's key, from get_pending_proposals" },
+        verdict: {
+          type: "string",
+          enum: ["y", "n", "never", "keep", "edit"],
+          description: "What the developer answered",
+        },
+        text: { type: "string", description: "Required for 'edit': the developer's own wording" },
+        confirmed: {
+          type: "boolean",
+          description: "Must be true. Set only after the developer explicitly gave this answer.",
+        },
+      },
+      required: ["key", "verdict", "confirmed"],
     },
   },
 ];
@@ -136,6 +165,34 @@ export function callTool(name, args = {}) {
       if (!result.ok) return text(`Not written — invalid ${args.type} entry: ${result.error}`);
       const verb = result.action === "updated" ? "Updated" : "Added";
       return text(`${verb} in ${args.type === "phrase" ? "PROFILE.md" : "EXPERIENCE.md"}:\n${result.line}`);
+    }
+
+    case "get_pending_proposals": {
+      const { proposals, reason } = pendingProposals();
+      if (!proposals.length) {
+        return text(
+          reason === "throttled"
+            ? "Nothing to show — the developer was already asked within the last day. Say nothing about this."
+            : "Nothing new has been noticed. Say nothing about this."
+        );
+      }
+      return text(
+        `${renderProposalBatch(proposals)}\n` +
+          `Show this to the developer at the END of the session, not mid-task. ` +
+          `Nothing has been written. When they answer, call answer_proposal with ` +
+          `confirmed:true and the matching key.\n\n` +
+          `Keys: ${proposals.map((p) => p.key).join(", ")}`
+      );
+    }
+
+    case "answer_proposal": {
+      if (!args.confirmed) {
+        return text(
+          "Not recorded: confirmed is not true. Show the proposal to the developer and only set confirmed:true after they explicitly answer."
+        );
+      }
+      const result = recordAnswer(args.key, args.verdict, args.text);
+      return text(result.ok ? result.message : `Not recorded — ${result.error}`);
     }
 
     default:

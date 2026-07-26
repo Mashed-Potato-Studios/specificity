@@ -1,0 +1,23 @@
+{
+  "_comment": "Secret-detection patterns, vendored as data so they can be refreshed without a code change. Shapes follow the public gitleaks/trufflehog rulesets. Spec: docs/SPEC-V2.md - 'Redaction'.",
+  "version": 1,
+  "rules": [
+    { "name": "openai-key", "tier": "credential", "pattern": "\\bsk-[A-Za-z0-9_-]{16,}" },
+    { "name": "anthropic-key", "tier": "credential", "pattern": "\\bsk-ant-[A-Za-z0-9_-]{16,}" },
+    { "name": "github-token", "tier": "credential", "pattern": "\\bgh[pousr]_[A-Za-z0-9]{16,}" },
+    { "name": "github-pat-fine", "tier": "credential", "pattern": "\\bgithub_pat_[A-Za-z0-9_]{20,}" },
+    { "name": "aws-access-key", "tier": "credential", "pattern": "\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b" },
+    { "name": "google-api-key", "tier": "credential", "pattern": "\\bAIza[0-9A-Za-z_-]{35}\\b" },
+    { "name": "slack-token", "tier": "credential", "pattern": "\\bxox[baprs]-[0-9A-Za-z-]{10,}" },
+    { "name": "stripe-key", "tier": "credential", "pattern": "\\b[sr]k_(?:live|test)_[0-9A-Za-z]{16,}" },
+    { "name": "npm-token", "tier": "credential", "pattern": "\\bnpm_[A-Za-z0-9]{30,}" },
+    { "name": "private-key-block", "tier": "credential", "pattern": "-----BEGIN [A-Z ]*PRIVATE KEY" },
+    { "name": "jwt", "tier": "credential", "pattern": "\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}" },
+    { "name": "bearer-token", "tier": "credential", "pattern": "\\b[Bb]earer\\s+[A-Za-z0-9._~+/-]{20,}" },
+    { "name": "connection-string", "tier": "credential", "pattern": "\\b[a-z][a-z0-9+.-]*://[^\\s:@/]+:[^\\s:@/]+@" },
+    { "name": "assigned-secret", "tier": "credential", "pattern": "(?i)\\b(?:api[_-]?key|secret|passwd|password|token|access[_-]?key)\\b\\s*[:=]\\s*[\"']?[^\\s\"',;]{8,}" },
+    { "name": "home-path", "tier": "identity", "pattern": "/(?:Users|home)/[A-Za-z0-9._-]+", "replacement": "~" },
+    { "name": "windows-home-path", "tier": "identity", "pattern": "[A-Za-z]:\\\\Users\\\\[A-Za-z0-9._-]+", "replacement": "~" },
+    { "name": "email", "tier": "identity", "pattern": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b", "replacement": "[email]" }
+  ]
+}

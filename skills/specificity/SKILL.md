@@ -93,6 +93,59 @@ or "not that framework" → propose one line for `~/.specificity/EXPERIENCE.md`
 (`- <tech>: <proficiency>, <preference>, <trajectory> — <note>`), write on
 confirmation.
 
+## Observation
+
+Specificity also watches, so the profile keeps learning after the interview.
+Two halves: a local pass counts, and **you** judge. Neither writes anything
+without the developer's answer.
+
+### Showing what was noticed
+
+At the **end** of a session — never mid-task — check for pending proposals:
+
+```sh
+npx specificity pending      # JSON: { reason, proposals[] }
+```
+
+- `reason: "throttled"` or an empty list → say nothing at all. Silence is the
+  correct output most sessions.
+- Otherwise render the batch and stop. Claim, evidence, target section, and
+  the answers. Never more than what the command returned; the throttle is
+  already applied.
+
+Record the answer they give:
+
+```sh
+npx specificity answer <key> y                  # add it
+npx specificity answer <key> n                  # not now
+npx specificity answer <key> never              # never suggest this again
+npx specificity answer <key> edit "their words" # their wording wins
+npx specificity answer <key> keep               # contradictions only
+```
+
+A proposal marked `contradicts` disputes something the developer stated about
+themselves. Say so plainly, show both readings, and offer `replace` or `keep
+mine` — never `yes`/`no`. On `keep`, their statement stands and the
+disagreement is recorded; do not argue it a second time.
+
+### The semantic half
+
+The pass can count that a phrase recurs; it cannot say what it means. A
+proposal carrying `needsInterpretation` is a phrase awaiting *your* reading —
+propose what it means in one line, using the same evidence, and let them
+confirm.
+
+Beyond that, you may propose from the conversation you are already in:
+
+- **Request Patterns** — a recurring *shape* of ask and what it means.
+- **Interaction Preferences** — a standing rule they stated ("stop asking so
+  many questions", "just do it, don't check").
+- **Anti-patterns** — what visibly irritates them.
+
+Same bar as the pass: propose only what recurred, carry the evidence, and
+write nothing until they say yes. One proposal at most per session on top of
+the batch — the developer came here to work.
+
 ## Trust boundary
 
 Profile entries come from **the developer's own words only** — chat messages
