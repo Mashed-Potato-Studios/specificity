@@ -43,6 +43,9 @@ Usage:
   specificity sync <location>  Sync to a folder or git repo you own
   specificity pull <location>  Restore this profile onto a new machine
 
+  specificity review           Show what has been noticed about you
+  specificity review redactions  What was stripped (counts only)
+
 Profile location: ${getProfileDir()}`);
 }
 
@@ -219,6 +222,49 @@ async function pullCommand(location) {
   }
 }
 
+async function reviewCommand(sub) {
+  const { runPass, readState, writeState } = await import("./lib/pass.js");
+  const proposals = await import("./lib/proposals.js");
+
+  if (sub === "redactions") {
+    const { redaction } = readState();
+    if (!redaction) {
+      console.log("No pass has run yet.");
+      return;
+    }
+    // Counts and rule names only — printing the match would recreate the leak.
+    console.log(`Scanned ${redaction.scanned} turn(s): ${redaction.dropped} dropped, ${redaction.normalized} normalized.`);
+    for (const [rule, count] of Object.entries(redaction.byRule)) {
+      console.log(`  ${rule}: ${count}`);
+    }
+    return;
+  }
+
+  const result = runPass();
+  const state = readState();
+
+  for (const q of result.quarantined) {
+    console.warn(`! reader "${q.reader}" quarantined: ${q.reason}`);
+  }
+
+  const { proposals: batch, reason } = proposals.dueProposals({ lastBatchAt: state.lastBatchAt });
+  if (!batch.length) {
+    console.log(
+      reason === "throttled"
+        ? "Nothing to review right now — already asked in the last day."
+        : `Nothing new to review. Scanned ${result.scanned} turn(s) from your history.`
+    );
+    return;
+  }
+
+  console.log(proposals.renderBatch(batch));
+  console.log(
+    "Nothing has been written to your profile. Answering happens in your agent,\n" +
+      "or run this again after your next session."
+  );
+  writeState({ ...state, lastBatchAt: Date.now() });
+}
+
 const args = process.argv.slice(2);
 const cmd = args[0];
 
@@ -235,6 +281,9 @@ switch (cmd) {
     break;
   case "pull":
     await pullCommand(args[1]);
+    break;
+  case "review":
+    await reviewCommand(args[1]);
     break;
   case "install":
     install();

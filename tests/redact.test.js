@@ -84,6 +84,25 @@ test("a long ordinary word is not mistaken for a secret", () => {
   assert.strictEqual(looksLikeSecret("internationalization"), false);
 });
 
+// Every one of these was an entropy false positive found in real history.
+const REAL_FALSE_POSITIVES = [
+  "@docs/superpowers/plans/2026-04-10-accountability-plan.md",
+  "screenshots/var/folders/ml/4fcvpgf16nj3ffps71vzmt2h0000gn/T/pi-clipboard-eb5e52.png",
+  "node:internal/modules/cjs/loader:1503",
+  "monaco-emacs.js?v=c6945e21:4",
+  "src/lib/specificity-mode-tracker.js",
+];
+
+for (const token of REAL_FALSE_POSITIVES) {
+  test(`path-like token is not a secret: ${token.slice(0, 40)}…`, () => {
+    assert.strictEqual(looksLikeSecret(token), false);
+  });
+}
+
+test("a real high-entropy secret is still caught despite a slash", () => {
+  assert.strictEqual(looksLikeSecret("aB3/dEf9xY2kLm8QrT5vWz1nPc7"), true);
+});
+
 console.log("\nredact: identity is normalized, not dropped");
 
 test("a home path is normalized and the turn is kept", () => {

@@ -56,7 +56,20 @@ const HIGH_ENTROPY_BITS = 4.0;
  * hole — it stops the heuristic from eating the corpus.
  */
 function isPathLike(token) {
-  return /^[~./]/.test(token) || token.includes("://") || token.includes("\\");
+  if (/^[~./]/.test(token) || token.includes("://") || token.includes("\\")) return true;
+
+  // Internal slashes: `@docs/plans/thing.md`, `node:internal/modules/loader:15`,
+  // `screenshots/var/folders/.../clip.png`. Measured on real history, these were
+  // every single entropy false positive.
+  //
+  // A file extension or a scheme prefix is decisive. Failing those, four or more
+  // path segments: a base64 secret reaching three slashes by chance is rare, and
+  // named credential rules run before this backstop anyway.
+  // A file extension is decisive on its own — `monaco-emacs.js?v=c6945e21:4`
+  // carries no slash at all.
+  if (/\.[A-Za-z]{1,6}(?:[?#:]|$)/.test(token)) return true;
+  if (/^[a-z][a-z0-9+.-]*:[^\s]/i.test(token) && !token.includes("://")) return true;
+  return (token.match(/\//g) || []).length >= 3;
 }
 
 export function looksLikeSecret(token) {

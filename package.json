@@ -16,7 +16,7 @@
     "./mcp": "./specificity-mcp/index.js"
   },
   "scripts": {
-    "test": "node tests/profile.test.js && node tests/hooks.test.js && node tests/mcp.test.js && node tests/crypto.test.js && node tests/journal.test.js && node tests/store.test.js && node tests/sync.test.js && node tests/redact.test.js",
+    "test": "node tests/profile.test.js && node tests/hooks.test.js && node tests/mcp.test.js && node tests/crypto.test.js && node tests/journal.test.js && node tests/store.test.js && node tests/sync.test.js && node tests/redact.test.js && node tests/readers.test.js && node tests/extract.test.js && node tests/proposals.test.js",
     "cli": "node src/cli.js",
     "mcp": "node specificity-mcp/index.js"
   },
