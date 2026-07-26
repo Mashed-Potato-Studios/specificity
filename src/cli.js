@@ -12,6 +12,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 import {
   getProfilePath,
@@ -61,11 +62,38 @@ function showProfile() {
   }
 }
 
+// Everything a profile is made of. Deleting only PROFILE.md leaves the journal,
+// which rebuilds the profile verbatim on the next sync — so reset must take the
+// journal and the materialized snapshot too, or it doesn't forget anything.
+const PROFILE_STATE_FILES = [
+  "_journal.jsonl",
+  "_materialized.md",
+  "_observations.jsonl",
+];
+
 function resetProfile() {
+  const dir = getProfileDir();
+  const targets = [getProfilePath(), getExperiencePath(), ...PROFILE_STATE_FILES.map((f) => path.join(dir, f))];
+
   let removed = 0;
-  try { fs.unlinkSync(getProfilePath()); removed++; } catch (e) {}
-  try { fs.unlinkSync(getExperiencePath()); removed++; } catch (e) {}
+  for (const target of targets) {
+    try {
+      fs.unlinkSync(target);
+      removed++;
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
+    }
+  }
+
   console.log(`Removed ${removed} file(s). Profile reset. Run /specificity-setup to rebuild.`);
+
+  if (fs.existsSync(path.join(dir, "_key"))) {
+    console.log(
+      "\nNote: this machine still holds your key, and any copy you synced to a\n" +
+        "remote is still there. `specificity key forget` removes the key; the\n" +
+        "remote copy has to be deleted where it lives."
+    );
+  }
 }
 
 function install() {
@@ -81,9 +109,20 @@ async function driverFor(location) {
     process.exit(1);
   }
   const target = location.replace(/^~/, os.homedir());
-  return fs.existsSync(path.join(target, ".git"))
-    ? gitDriver({ root: target })
-    : fsDriver({ root: target });
+  if (!fs.existsSync(path.join(target, ".git"))) return fsDriver({ root: target });
+
+  // A git checkout only syncs between machines if it actually talks to its
+  // remote, so wire one up when the repo has one.
+  let remote = null;
+  try {
+    remote = execFileSync("git", ["remote"], { cwd: target, encoding: "utf8" })
+      .split("\n")
+      .map((r) => r.trim())
+      .filter(Boolean)[0] || null;
+  } catch {
+    /* not fatal: a local-only repo still works as a versioned folder */
+  }
+  return gitDriver({ root: target, remote });
 }
 
 async function keyCommand(sub) {

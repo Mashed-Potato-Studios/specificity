@@ -298,5 +298,74 @@ test("compaction does not change what is live", () => {
   );
 });
 
+console.log("\njournal: regressions");
+
+test("a snapshot never clobbers an event that arrives after compaction", () => {
+  // A snapshot is stamped at the cutoff, which is later than the events it
+  // folded. An older tombstone arriving afterwards must still win.
+  const now = 400 * DAY;
+  const compacted = compact([add("wakes early", "Rhythm", LAPTOP, 1 * DAY)], {
+    now,
+    maxAgeDays: 90,
+  });
+  const late = [remove("wakes early", DESKTOP, 2 * DAY)];
+  assert.deepStrictEqual(facts(mergeJournals(compacted, late), "Rhythm"), []);
+});
+
+test("compaction preserves provenance dates", () => {
+  const now = 400 * DAY;
+  const out = compact([add("wakes early", "Rhythm", LAPTOP, 5 * DAY)], { now, maxAgeDays: 90 });
+  const fact = materialize(out).sections.get("Rhythm")[0];
+  assert.strictEqual(fact.confirmedAt, 5 * DAY);
+  assert.strictEqual(fact.origin, "stated");
+});
+
+test("compaction remembers which sections it manages", () => {
+  const now = 400 * DAY;
+  const out = compact(
+    [add("wakes early", "Rhythm", LAPTOP, 1 * DAY), remove("wakes early", LAPTOP, 2 * DAY)],
+    { now, maxAgeDays: 90 }
+  );
+  assert.ok(materialize(out).knownSections.has("Rhythm"));
+});
+
+test("an event with no declared origin is not promoted to confirmed", () => {
+  const bare = makeEvent({ op: "add", section: "S", text: "x", machine: LAPTOP, ts: 1 });
+  assert.strictEqual(materialize([bare]).sections.get("S")[0].origin, "unconfirmed");
+});
+
+console.log("\njournal: rendering preserves what it doesn't own");
+
+test("an unknown section is preserved untouched", () => {
+  const state = materialize([add("wakes early", "Rhythm", LAPTOP, 1)]);
+  const existing = "## Rhythm\n- wakes early\n\n## Someone Else's Section\n- their fact\n";
+  const out = renderProfile(state, { existing });
+  assert.match(out, /## Someone Else's Section/);
+  assert.match(out, /- their fact/);
+});
+
+test("prose and comments inside a managed section survive", () => {
+  const state = materialize([add("wakes early", "Rhythm", LAPTOP, 1)]);
+  const existing = "## Rhythm\n<!-- a note to myself -->\n- wakes early\nfree prose line\n";
+  const out = renderProfile(state, { existing });
+  assert.match(out, /<!-- a note to myself -->/);
+  assert.match(out, /free prose line/);
+});
+
+test("an emptied managed section drops its stale bullets", () => {
+  const state = materialize([
+    add("wakes early", "Rhythm", LAPTOP, 1),
+    remove("wakes early", LAPTOP, 2),
+  ]);
+  const out = renderProfile(state, { existing: "## Rhythm\n- wakes early\n" });
+  assert.ok(!out.includes("wakes early"));
+});
+
+test("the profile name is carried through", () => {
+  const state = materialize([add("wakes early", "Rhythm", LAPTOP, 1)]);
+  const out = renderProfile(state, { existing: "# Specificity Profile — vantol\n## Rhythm\n" });
+  assert.match(out, /# Specificity Profile — vantol/);
+});
+
 console.log(`\n${passed} passed, ${failed} failed\n`);
 process.exit(failed > 0 ? 1 : 0);

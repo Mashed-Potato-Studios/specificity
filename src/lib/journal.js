@@ -23,7 +23,18 @@ export function factHash(text) {
  * so "forget this about me" doesn't leave the forgotten thing sitting in a
  * synced journal forever.
  */
-export function makeEvent({ op, section, text, factHash: hash, machine, ts, origin, evidence, facts }) {
+export function makeEvent({
+  op,
+  section,
+  sections,
+  text,
+  factHash: hash,
+  machine,
+  ts,
+  origin,
+  evidence,
+  facts,
+}) {
   if (!OPS.has(op)) throw new Error(`unknown op: ${op}`);
   if (!machine) throw new Error("event requires a machine id");
 
@@ -38,7 +49,10 @@ export function makeEvent({ op, section, text, factHash: hash, machine, ts, orig
   if (section) event.section = section;
   if (origin) event.origin = origin;
   if (evidence) event.evidence = evidence;
-  if (op === "snapshot") event.facts = facts || [];
+  if (op === "snapshot") {
+    event.facts = facts || [];
+    if (sections) event.sections = [...sections];
+  }
 
   // Tombstones and confirmations never carry text.
   if (text !== undefined && op !== "remove" && op !== "confirm") event.text = text;
@@ -72,28 +86,55 @@ export function mergeJournals(...journals) {
 export function materialize(events) {
   const live = new Map(); // factHash -> fact
   const rejected = new Set();
+  // Every section the journal has ever touched. A section that is managed but
+  // currently empty must render as empty — otherwise a rendered file that
+  // still holds the old bullets would resurrect facts the journal deleted.
+  const knownSections = new Set();
 
-  const applyAdd = (hash, { section, text, ts, origin }) => {
+  const applyAdd = (hash, source) => {
+    // A snapshot replays facts that already carry their dates; a plain event
+    // carries only its own ts. Reading just `ts` blanks provenance on every
+    // compaction.
+    const seenAt = source.ts ?? source.lastSeenAt ?? source.confirmedAt;
     const existing = live.get(hash);
     if (existing) {
-      existing.lastSeenAt = ts;
-      if (section) existing.section = section;
+      existing.lastSeenAt = seenAt;
+      if (source.section) existing.section = source.section;
       return;
     }
     live.set(hash, {
       factHash: hash,
-      section: section || "Uncategorized",
-      text,
-      origin: origin || "confirmed-observation",
-      confirmedAt: ts,
-      lastSeenAt: ts,
+      section: source.section || "Uncategorized",
+      text: source.text,
+      // Default to the untrusted value. The write trust boundary says agent
+      // inference may never author facts, so an event that forgot to declare
+      // its origin must not be promoted to confirmed.
+      origin: source.origin || "unconfirmed",
+      confirmedAt: source.confirmedAt ?? seenAt,
+      lastSeenAt: seenAt,
     });
   };
 
-  for (const event of ordered(events)) {
+  // Snapshots are a base layer, not a point in the timeline. A snapshot is
+  // stamped at the compaction cutoff, which is *later* than the events it
+  // folded — so applying it in timestamp order would let it clobber an older
+  // event that arrives after compaction, resurrecting deleted facts. Lay the
+  // snapshots down first, then replay everything else over them. Tombstones
+  // are retained forever precisely so they still win this replay.
+  const all = ordered(events);
+  const sequence = [...all.filter((e) => e.op === "snapshot"), ...all.filter((e) => e.op !== "snapshot")];
+
+  for (const event of sequence) {
+    if (event.section) knownSections.add(event.section);
     switch (event.op) {
       case "snapshot":
-        for (const fact of event.facts || []) applyAdd(fact.factHash, fact);
+        // Sections the folded-away events knew about, so a compacted journal
+        // still recognises a section it manages but has since emptied.
+        for (const section of event.sections || []) knownSections.add(section);
+        for (const fact of event.facts || []) {
+          if (fact.section) knownSections.add(fact.section);
+          applyAdd(fact.factHash, fact);
+        }
         break;
       case "add":
         applyAdd(event.factHash, event);
@@ -129,7 +170,7 @@ export function materialize(events) {
     sections.get(fact.section).push(fact);
   }
 
-  return { sections, rejected, facts: live };
+  return { sections, rejected, facts: live, knownSections };
 }
 
 /** Order sections as the convention lists them; unknown ones keep their order. */
@@ -153,22 +194,58 @@ const SECTION_ORDER = [
  * A section with no facts is omitted entirely — convention v1 says a missing
  * section means unknown, and an empty heading would imply "none".
  */
-export function renderProfile(state, { name = "", updated = null } = {}) {
-  const names = [...state.sections.keys()].sort((a, b) => {
+export function renderProfile(state, { name = "", updated = null, existing = "" } = {}) {
+  const prior = splitIntoBlocks(existing);
+  const priorHeadings = new Set(prior.blocks.map((b) => b.heading));
+
+  const managed = [...state.sections.keys()].sort((a, b) => {
     const ai = SECTION_ORDER.indexOf(a);
     const bi = SECTION_ORDER.indexOf(b);
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b);
   });
 
   const date = updated || new Date().toISOString().slice(0, 10);
+  const title = name || prior.name;
   const out = [
     "<!-- specificity-profile-version: 1 -->",
-    `# Specificity Profile${name ? ` — ${name}` : ""}`,
+    `# Specificity Profile${title ? ` — ${title}` : ""}`,
     `# Updated: ${date}`,
     "",
   ];
 
-  for (const section of names) {
+  const emitted = new Set();
+
+  // Walk the existing file so its order, prose, sub-headings and comments
+  // survive. The convention requires unknown sections and fields to be
+  // preserved, and a hand-written note is the developer's own words.
+  const known = state.knownSections || new Set(state.sections.keys());
+
+  for (const block of prior.blocks) {
+    const facts = state.sections.get(block.heading) || [];
+
+    // A section the journal has never touched is somebody else's — an unknown
+    // extension the convention requires us to preserve untouched.
+    if (!known.has(block.heading)) {
+      out.push(`## ${block.heading}`, ...block.lines, "");
+      continue;
+    }
+
+    // A managed section renders its journal facts, plus any non-bullet content
+    // the developer wrote around them. Stale bullets are dropped: the journal
+    // decides which facts are live.
+    const preserved = block.lines.filter((l) => !/^[-*]\s+/.test(l) && l.trim() !== "");
+    if (facts.length === 0 && preserved.length === 0) {
+      emitted.add(block.heading);
+      continue;
+    }
+    out.push(`## ${block.heading}`);
+    for (const fact of facts) out.push(`- ${fact.text}`);
+    out.push(...preserved, "");
+    emitted.add(block.heading);
+  }
+
+  for (const section of managed) {
+    if (emitted.has(section) || priorHeadings.has(section)) continue;
     const facts = state.sections.get(section);
     if (!facts || facts.length === 0) continue;
     out.push(`## ${section}`);
@@ -177,6 +254,37 @@ export function renderProfile(state, { name = "", updated = null } = {}) {
   }
 
   return out.join("\n");
+}
+
+/** Split a profile into its `## ` blocks, keeping every raw line. */
+function splitIntoBlocks(markdown) {
+  const blocks = [];
+  let name = "";
+  let current = null;
+
+  for (const line of String(markdown).split("\n")) {
+    const title = line.match(/^#\s+Specificity Profile\s*(?:—|--)\s*(.+?)\s*$/);
+    if (title) {
+      name = title[1];
+      continue;
+    }
+    const heading = line.match(/^##\s+(.+?)\s*$/);
+    if (heading) {
+      current = { heading: heading[1], lines: [] };
+      blocks.push(current);
+      continue;
+    }
+    if (current) current.lines.push(line);
+  }
+
+  // Drop trailing blank lines inside each block; spacing is re-applied on render.
+  for (const block of blocks) {
+    while (block.lines.length && block.lines[block.lines.length - 1].trim() === "") {
+      block.lines.pop();
+    }
+  }
+
+  return { blocks, name };
 }
 
 /** Read a profile back into sections of plain fact lines. */
@@ -260,6 +368,7 @@ export function compact(events, { now = Date.now(), maxAgeDays = 90, machine = "
     machine,
     ts: cutoff,
     facts: [...state.facts.values()],
+    sections: state.knownSections,
   });
 
   const tombstones = old.filter((e) => e.op === "remove" || e.op === "reject");

@@ -8,12 +8,20 @@ import path from "path";
 import { getProfileDir } from "../../hooks/specificity-config.js";
 import { encrypt, decrypt, pathFor } from "./crypto.js";
 import { machineId } from "./identity.js";
-import { mergeJournals, materialize, renderProfile, reconcile } from "./journal.js";
+import { mergeJournals, materialize, renderProfile, reconcile, compact } from "./journal.js";
 
 export const JOURNAL_FILE = "_journal.jsonl";
 export const PROFILE_FILE = "PROFILE.md";
 
-/** Files that travel, each as its own blob so append-only data union-merges. */
+/**
+ * Files that travel, each as its own blob.
+ *
+ * Only the journal merges — it is the source of truth, and union-merging it is
+ * what makes concurrent edits safe. The rest are conveniences derived from or
+ * beside it, and are last-writer-wins across machines. `PROFILE.md` is
+ * regenerated from the journal on every sync, so shipping it costs nothing and
+ * lets a reader see the profile without replaying events.
+ */
 export const SYNCED_FILES = [PROFILE_FILE, "EXPERIENCE.md", JOURNAL_FILE, "_observations.jsonl"];
 
 export function readJournal(dir = getProfileDir()) {
@@ -35,10 +43,26 @@ export function readJournal(dir = getProfileDir()) {
 
 export function writeJournal(events, dir = getProfileDir()) {
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(
-    path.join(dir, JOURNAL_FILE),
-    events.map((e) => JSON.stringify(e)).join("\n") + (events.length ? "\n" : "")
-  );
+  const target = path.join(dir, JOURNAL_FILE);
+  // Write-then-rename. The journal is the one file that cannot be rebuilt from
+  // anything else, so a crash mid-write must not truncate it.
+  const temp = `${target}.tmp-${process.pid}`;
+  fs.writeFileSync(temp, events.map((e) => JSON.stringify(e)).join("\n") + (events.length ? "\n" : ""));
+  fs.renameSync(temp, target);
+}
+
+/** Parse an encrypted journal blob. Returns null if it is not valid JSONL. */
+function parseJournalText(text) {
+  const events = [];
+  for (const line of text.split("\n")) {
+    if (!line) continue;
+    try {
+      events.push(JSON.parse(line));
+    } catch {
+      return null;
+    }
+  }
+  return events;
 }
 
 export function appendEvents(events, dir = getProfileDir()) {
@@ -59,7 +83,12 @@ export const SNAPSHOT_FILE = "_materialized.md";
 /** Rewrite PROFILE.md from the journal, and record what was written. */
 export function materializeToDisk(events, dir = getProfileDir()) {
   const state = materialize(events);
-  const rendered = renderProfile(state);
+  const target = path.join(dir, PROFILE_FILE);
+  // Render against the file already on disk so prose, sub-headings, comments
+  // and unknown sections survive — the convention requires consumers to
+  // preserve what they don't understand.
+  const existing = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+  const rendered = renderProfile(state, { existing });
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, PROFILE_FILE), rendered);
   fs.writeFileSync(path.join(dir, SNAPSHOT_FILE), rendered);
@@ -130,11 +159,18 @@ export async function sync({ driver, key, dir = getProfileDir(), ts = Date.now()
         );
         return result;
       }
-      remoteEvents = plaintext
-        .toString("utf8")
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => JSON.parse(line));
+      const parsed = parseJournalText(plaintext.toString("utf8"));
+      if (parsed === null) {
+        // Decrypted but malformed. Same posture as a bad tag: refuse, keep
+        // local intact. It must not fall through to the unreachable branch.
+        result.status = "refused";
+        warnings.push(
+          "Remote journal decrypted but is not valid JSONL. " +
+            "Local profile left untouched; nothing was pushed."
+        );
+        return result;
+      }
+      remoteEvents = parsed;
       result.pulled = remoteEvents.length;
     }
   } catch (err) {
@@ -143,7 +179,9 @@ export async function sync({ driver, key, dir = getProfileDir(), ts = Date.now()
   }
 
   // --- merge ----------------------------------------------------------------
-  const merged = mergeJournals(events, remoteEvents);
+  // Compaction runs here so the journal cannot grow without bound. Tombstones
+  // are retained by compact() regardless of age.
+  const merged = compact(mergeJournals(events, remoteEvents), { now: ts, machine: machineId(dir) });
   writeJournal(merged, dir);
   materializeToDisk(merged, dir);
 
@@ -173,11 +211,10 @@ export async function restore({ driver, key, dir = getProfileDir() } = {}) {
   const blob = await driver.get(pathFor(key, JOURNAL_FILE));
   if (!blob) return { status: "empty", events: 0 };
 
-  const events = decrypt(key, blob)
-    .toString("utf8")
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
+  const events = parseJournalText(decrypt(key, blob).toString("utf8"));
+  if (events === null) {
+    throw new Error("remote journal decrypted but is not valid JSONL; nothing was written");
+  }
 
   writeJournal(events, dir);
   materializeToDisk(events, dir);

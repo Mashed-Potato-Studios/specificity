@@ -117,7 +117,7 @@ function prune(versionsDir, key, keep) {
  * Git driver — version history and credential handling for free, via the
  * user's existing setup. Shells out rather than taking a dependency.
  */
-export function gitDriver({ root, remote = null, commitMessage = "specificity: sync" }) {
+export function gitDriver({ root, remote = null, branch = "HEAD", commitMessage = "specificity: sync" }) {
   const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 
   const ensureRepo = () => {
@@ -125,11 +125,28 @@ export function gitDriver({ root, remote = null, commitMessage = "specificity: s
     if (!fs.existsSync(path.join(root, ".git"))) git("init", "--quiet");
   };
 
+  /**
+   * Pull before reading. Without this the driver only ever sees its own
+   * working tree, so two machines sharing a repo would never see each other —
+   * which is the entire point of choosing git.
+   */
+  const refresh = () => {
+    if (!remote) return;
+    try {
+      git("fetch", "--quiet", remote);
+      git("merge", "--quiet", "--ff-only", "FETCH_HEAD");
+    } catch {
+      // Diverged or unreachable. The journal merges at a higher layer, so a
+      // failed fast-forward is not fatal: we read what we have and push after.
+    }
+  };
+
   return {
     name: "git",
     capabilities: { history: true },
 
     async get(key) {
+      refresh();
       try {
         return fs.readFileSync(path.join(root, key));
       } catch (err) {
@@ -148,7 +165,7 @@ export function gitDriver({ root, remote = null, commitMessage = "specificity: s
       } catch {
         /* no-op: identical content */
       }
-      if (remote) git("push", "--quiet", remote, "HEAD");
+      if (remote) git("push", "--quiet", remote, branch);
     },
 
     async list(prefix = "") {
