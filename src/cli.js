@@ -42,6 +42,8 @@ Usage:
 
   specificity sync <location>  Sync to a folder or git repo you own
   specificity pull <location>  Restore this profile onto a new machine
+  specificity rollback <location> [list|<version>]
+                               Recover an earlier version of your profile
 
   specificity review           Show what has been noticed about you
   specificity review redactions  What was stripped (counts only)
@@ -225,6 +227,55 @@ async function pullCommand(location) {
   }
 }
 
+async function rollbackCommand(location, version) {
+  const { rollback, listVersions } = await import("./lib/sync.js");
+  const { loadKey } = await import("./lib/identity.js");
+
+  const key = loadKey();
+  if (!key) {
+    console.error('No key on this machine. Run: specificity key restore "<phrase>"');
+    process.exit(1);
+  }
+  const driver = await driverFor(location);
+
+  if (version === "list") {
+    const versions = await listVersions({ driver, key });
+    if (!versions.length) {
+      console.log("No earlier versions at that location.");
+      return;
+    }
+    console.log(`${versions.length} earlier version(s), newest first:\n`);
+    versions.forEach((v, i) => console.log(`  ${i === 0 ? "*" : " "} ${v}`));
+    console.log("\nRecover one with: specificity rollback <location> <version>");
+    return;
+  }
+
+  const result = await rollback({ driver, key, version: version || null });
+
+  switch (result.status) {
+    case "restored":
+      // Rolling back merges rather than replaces: the journal is append-only,
+      // so anything learned since the bad change survives the recovery.
+      console.log(
+        `Recovered ${result.recovered} event(s) from ${result.target}.\n` +
+          `Merged with what was already here — ${result.total} event(s) total. ` +
+          `Nothing learned since was lost.`
+      );
+      break;
+    case "no-history":
+      console.error("That backend keeps no version history, so there is nothing to roll back to.");
+      process.exit(1);
+      break;
+    case "not-found":
+      console.error(`No such version. Run \`specificity rollback <location> list\` to see them.`);
+      process.exit(1);
+      break;
+    default:
+      console.error(`Could not recover that version (${result.status}). Local profile untouched.`);
+      process.exit(1);
+  }
+}
+
 async function reviewCommand(sub) {
   const { runPass, readState, writeState } = await import("./lib/pass.js");
   const proposals = await import("./lib/proposals.js");
@@ -349,6 +400,9 @@ switch (cmd) {
     break;
   case "review":
     await reviewCommand(args[1]);
+    break;
+  case "rollback":
+    await rollbackCommand(args[1], args[2]);
     break;
   case "pending":
     await pendingCommand();

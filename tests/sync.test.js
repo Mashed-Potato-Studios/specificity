@@ -284,6 +284,73 @@ await test("a wrong key is refused rather than merged", async () => {
   assert.strictEqual(result.status, "refused");
 });
 
+console.log("\nsync: rollback");
+
+await test("a bad observation can be rolled back", async () => {
+  const driver = fsDriver({ root: tmp("remote-rollback") });
+  const dir = tmp("rollback-machine");
+  const { key } = createIdentity(dir);
+
+  learn(dir, "wakes early", "Rhythm & Context", 1000);
+  await sync({ driver, key, dir });
+
+  // A later sync writes something the developer regrets.
+  learn(dir, "hates mornings", "Rhythm & Context", 2000);
+  await sync({ driver, key, dir });
+  assert.match(profileOf(dir), /hates mornings/);
+
+  const { listVersions, rollback } = await import("../src/lib/sync.js");
+  const versions = await listVersions({ driver, key });
+  assert.ok(versions.length >= 1, "expected an earlier version to exist");
+
+  const result = await rollback({ driver, key, dir, version: versions[versions.length - 1] });
+  assert.strictEqual(result.status, "restored");
+  assert.match(profileOf(dir), /wakes early/, "the recovered event should be back");
+});
+
+await test("rollback merges rather than replaces, so later learning survives", async () => {
+  const driver = fsDriver({ root: tmp("remote-rollback-merge") });
+  const dir = tmp("rollback-merge-machine");
+  const { key } = createIdentity(dir);
+
+  learn(dir, "first fact", "Rhythm & Context", 1000);
+  await sync({ driver, key, dir });
+  learn(dir, "second fact", "Rhythm & Context", 2000);
+  await sync({ driver, key, dir });
+
+  const { listVersions, rollback } = await import("../src/lib/sync.js");
+  const versions = await listVersions({ driver, key });
+  await rollback({ driver, key, dir, version: versions[versions.length - 1] });
+
+  // The journal is append-only: recovering old events must not delete new ones.
+  const text = profileOf(dir);
+  assert.match(text, /first fact/);
+  assert.match(text, /second fact/, "rollback must not discard later learning");
+});
+
+await test("a backend with no history says so rather than pretending", async () => {
+  const dir = tmp("rollback-nohistory");
+  const { key } = createIdentity(dir);
+  const { rollback } = await import("../src/lib/sync.js");
+  const result = await rollback({ driver: memoryDriver(), key, dir });
+  assert.strictEqual(result.status, "no-history");
+});
+
+await test("a corrupt remote points at the recovery path", async () => {
+  const driver = fsDriver({ root: tmp("remote-corrupt-offer") });
+  const dir = tmp("corrupt-offer-machine");
+  const { key } = createIdentity(dir);
+  learn(dir, "wakes early", "Rhythm & Context", 1000);
+  await sync({ driver, key, dir });
+  await sync({ driver, key, dir });
+
+  await driver.put(pathFor(key, "_journal.jsonl"), Buffer.from("SPCF\x01garbage"));
+  const result = await sync({ driver, key, dir });
+
+  assert.strictEqual(result.status, "refused");
+  assert.match(result.warnings[0], /rollback/, "the warning should offer the recovery path");
+});
+
 await test("no key means no sync, with a clear message", async () => {
   const dir = tmp("fail-nokey");
   const result = await sync({ driver: memoryDriver(), key: null, dir });

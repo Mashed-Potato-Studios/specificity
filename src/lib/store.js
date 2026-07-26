@@ -97,6 +97,16 @@ export function fsDriver({ root, keepVersions = 10 }) {
         .sort()
         .reverse();
     },
+
+    /** Read an archived version back. Without this, history is unreachable. */
+    async readVersion(key, version) {
+      try {
+        return fs.readFileSync(path.join(versionsDir, version));
+      } catch (err) {
+        if (err.code === "ENOENT") return null;
+        throw err;
+      }
+    },
   };
 }
 
@@ -192,6 +202,17 @@ export function gitDriver({ root, remote = null, branch = "HEAD", commitMessage 
         return git("log", "--format=%H", "--", key).split("\n").filter(Boolean);
       } catch {
         return [];
+      }
+    },
+
+    async readVersion(key, version) {
+      try {
+        return execFileSync("git", ["show", `${version}:${key}`], {
+          cwd: root,
+          maxBuffer: 32 * 1024 * 1024,
+        });
+      } catch {
+        return null;
       }
     },
   };

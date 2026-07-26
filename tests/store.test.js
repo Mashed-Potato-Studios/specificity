@@ -116,6 +116,33 @@ await test("fs driver prunes beyond the keep limit", async () => {
   assert.ok((await driver.versions("thing")).length <= 2);
 });
 
+await test("an archived version can be read back", async () => {
+  const driver = fsDriver({ root: tmp("fs-readback"), keepVersions: 5 });
+  await driver.put("thing", Buffer.from("original"));
+  await driver.put("thing", Buffer.from("replacement"));
+
+  const [latest] = await driver.versions("thing");
+  assert.strictEqual((await driver.readVersion("thing", latest)).toString(), "original");
+});
+
+await test("reading a version that does not exist returns null", async () => {
+  const driver = fsDriver({ root: tmp("fs-noversion") });
+  assert.strictEqual(await driver.readVersion("thing", "nope"), null);
+});
+
+if (gitAvailable) {
+  await test("git driver reads an earlier commit back", async () => {
+    const driver = gitDriver({ root: tmp("git-readback") });
+    await driver.put("thing", Buffer.from("original"));
+    await driver.put("thing", Buffer.from("replacement"));
+
+    const versions = await driver.versions("thing");
+    assert.strictEqual(versions.length, 2);
+    // Newest first, so the older commit holds the original bytes.
+    assert.strictEqual((await driver.readVersion("thing", versions[1])).toString(), "original");
+  });
+}
+
 await test("fs driver leaves no temp files behind", async () => {
   const root = tmp("fs-temp");
   const driver = fsDriver({ root });

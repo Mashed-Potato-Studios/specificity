@@ -153,9 +153,15 @@ export async function sync({ driver, key, dir = getProfileDir(), ts = Date.now()
         // Wrong key or corrupt blob. Refuse — never overwrite local with
         // garbage, never silently re-key.
         result.status = "refused";
+        const history = await listVersions({ driver, key });
+        result.versions = history;
         warnings.push(
           `Remote profile could not be decrypted (${err.message}). ` +
-            `Local profile left untouched; nothing was pushed.`
+            `Local profile left untouched; nothing was pushed.` +
+            (history.length
+              ? ` ${history.length} earlier version(s) are available — ` +
+                `run \`specificity rollback <location>\` to recover one.`
+              : "")
         );
         return result;
       }
@@ -201,6 +207,50 @@ export async function sync({ driver, key, dir = getProfileDir(), ts = Date.now()
   }
 
   return result;
+}
+
+/**
+ * Prior versions of the remote journal, newest first, as the failure posture
+ * promises. Empty when the driver keeps no history.
+ */
+export async function listVersions({ driver, key } = {}) {
+  if (!driver.capabilities?.history || typeof driver.versions !== "function") return [];
+  try {
+    return await driver.versions(pathFor(key, JOURNAL_FILE));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Roll the profile back to an earlier remote version.
+ *
+ * The journal is append-only, so rolling back is *not* a delete: the recovered
+ * events are merged with what is already local. A bad merge or a bad
+ * observation is undone by restoring the events that predate it, while
+ * anything learned since survives.
+ */
+export async function rollback({ driver, key, dir = getProfileDir(), version = null } = {}) {
+  const versions = await listVersions({ driver, key });
+  if (!versions.length) return { status: "no-history", versions: [] };
+
+  const target = version || versions[0];
+  const blob = await driver.readVersion(pathFor(key, JOURNAL_FILE), target);
+  if (!blob) return { status: "not-found", versions, target };
+
+  let events;
+  try {
+    events = parseJournalText(decrypt(key, blob).toString("utf8"));
+  } catch (err) {
+    return { status: "undecryptable", versions, target, error: err.message };
+  }
+  if (events === null) return { status: "corrupt", versions, target };
+
+  const merged = mergeJournals(readJournal(dir), events);
+  writeJournal(merged, dir);
+  materializeToDisk(merged, dir);
+
+  return { status: "restored", versions, target, recovered: events.length, total: merged.length };
 }
 
 /**
