@@ -66,6 +66,38 @@ test("a dropped turn leaks nothing through findings", () => {
   assert.ok(!JSON.stringify(result).includes(token.split(" ").pop()));
 });
 
+// The highest-value secret this project handles, and the one nothing else
+// here would catch: twelve dictionary words match no provider pattern and
+// have low per-token entropy.
+const PHRASE = "abandon ability able about above absent absorb abstract absurd abuse access accident";
+
+test("a recovery phrase is dropped", () => {
+  assert.strictEqual(scanTurn(PHRASE).action, "drop");
+});
+
+test("a recovery phrase in the middle of a sentence is dropped", () => {
+  const result = scanTurn(`my phrase is ${PHRASE} please store it somewhere`);
+  assert.strictEqual(result.action, "drop");
+  assert.strictEqual(result.text, null);
+});
+
+test("the phrase never appears in findings", () => {
+  assert.ok(!JSON.stringify(scanTurn(PHRASE)).includes("abandon"));
+});
+
+test("ordinary prose using a few wordlist words survives", () => {
+  // "able", "about", "above", "access" are all in the wordlist.
+  const prose = "I am able to talk about the access issue above, if you have time";
+  assert.strictEqual(scanTurn(prose).action, "keep");
+});
+
+test("a long ordinary sentence is not mistaken for a phrase", () => {
+  const prose =
+    "when you get a chance can you look at the way the client handles a failed " +
+    "request and tell me whether it should retry or just surface the error";
+  assert.strictEqual(scanTurn(prose).action, "keep");
+});
+
 test("an unknown high-entropy token is dropped as uncertain", () => {
   const result = scanTurn("use vT7xQ2mLp9RcW4zN8bY6kJ3h as the value");
   assert.strictEqual(result.action, "drop");

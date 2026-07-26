@@ -26,6 +26,41 @@ const RULES = RULESET.rules.map((rule) => {
   };
 });
 
+/**
+ * A recovery phrase is the highest-value secret this project handles, and it is
+ * invisible to everything else here: twelve ordinary dictionary words match no
+ * provider pattern and have low per-token entropy. A phrase pasted into a
+ * prompt — or printed by `key create` into a transcript — must never be stored.
+ *
+ * Eleven consecutive wordlist words is the threshold: below a full mnemonic,
+ * above anything English prose produces by accident.
+ */
+const MNEMONIC_RUN = 11;
+
+let wordlistSet = null;
+function mnemonicWords() {
+  if (!wordlistSet) {
+    const file = path.join(HERE, "wordlist-en.txt");
+    wordlistSet = new Set(
+      fs.readFileSync(file, "utf8").split("\n").map((w) => w.trim()).filter(Boolean)
+    );
+  }
+  return wordlistSet;
+}
+
+export function containsMnemonic(text) {
+  const words = String(text).toLowerCase().match(/[a-z]+/g);
+  if (!words || words.length < MNEMONIC_RUN) return false;
+
+  const list = mnemonicWords();
+  let run = 0;
+  for (const word of words) {
+    run = list.has(word) ? run + 1 : 0;
+    if (run >= MNEMONIC_RUN) return true;
+  }
+  return false;
+}
+
 /** Shannon entropy in bits per character. */
 export function entropy(text) {
   if (!text.length) return 0;
@@ -97,6 +132,11 @@ export function looksLikeSecret(token) {
 export function scanTurn(input) {
   const findings = [];
   let text = String(input ?? "");
+
+  if (containsMnemonic(text)) {
+    findings.push({ rule: "recovery-phrase", tier: "credential" });
+    return { action: "drop", text: null, findings };
+  }
 
   for (const rule of RULES) {
     rule.regex.lastIndex = 0;
