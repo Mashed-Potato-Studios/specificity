@@ -374,7 +374,7 @@ user-origin gate. Redaction governs observation, not declaration. _(Ticket 9)_
 ### Confirmation
 
 **Session end, throttled, batched:** ≤3 proposals per batch, ≤1 batch per 24
-hours, never mid-task. Plus `npx specificity review` on demand. Pull-only was
+hours, never mid-task. Plus `npx @mashed-potato-studios/specificity review` on demand. Pull-only was
 rejected as the honest failure mode — nobody runs it, and learning silently stops.
 
 **The pass stages; the surface renders.** Proposals are written to the machine
@@ -389,7 +389,7 @@ nothing to check it against; full excerpts are too much to read at session end.
 From the prototype, using this developer's real candidates:
 
 ```
-Specificity noticed 3 things (npx specificity review)
+Specificity noticed 3 things (npx @mashed-potato-studios/specificity review)
 
 1. Rhythm & Context
    "Often starts work between 6–7am"
@@ -472,7 +472,7 @@ delete-to-forget; battery policy; and resource budgets. Uninstall is
 **The pass is not per-host** — one Claude Code session start picks up everything
 pi wrote since yesterday.
 
-**Health is visible:** `npx specificity review` states when each reader last ran
+**Health is visible:** `npx @mashed-potato-studios/specificity review` states when each reader last ran
 and what it found, and says so when one is quarantined. Silence must never be
 mistaken for "nothing to learn". _(Ticket 11)_
 

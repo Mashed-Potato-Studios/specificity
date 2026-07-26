@@ -42,37 +42,43 @@ cp -r skills/* ~/.pi/agent/skills/
 cp -r skills/* ~/.agents/skills/
 
 # CLI / hooks (npx always resolves the latest published version)
-npx specificity@latest version
+npm i -g @mashed-potato-studios/specificity@latest
 ```
 
 Start a new agent session afterwards so the session hooks reload.
 
-**Your profile is never touched by an update.** `~/.specificity/PROFILE.md` and `EXPERIENCE.md` live outside every install path by design, so upgrading or reinstalling the skills can't overwrite, migrate, or delete what you told the agent about yourself. You only ever change them by running `/specificity-profile`, `/specificity-setup`, or `npx specificity profile reset`.
+**Your profile is never touched by an update.** `~/.specificity/PROFILE.md` and `EXPERIENCE.md` live outside every install path by design, so upgrading or reinstalling the skills can't overwrite, migrate, or delete what you told the agent about yourself. You only ever change them by running `/specificity-profile`, `/specificity-setup`, or `specificity profile reset`.
 
 To update the *profile* rather than the skill, see `/specificity-profile` (amend or reset) and re-run `/specificity-experience` when your stack changes.
 
 ## CLI & runtime
 
-Specificity also ships as an npm package with a CLI and session hooks, so it works beyond skills-aware agents:
+Specificity also ships as an npm package with a CLI and session hooks, so it works beyond skills-aware agents.
 
 ```sh
-npx specificity profile        # show your profile + experience
-npx specificity profile reset  # delete the profile, journal and observations
-npx specificity version
+npm i -g @mashed-potato-studios/specificity
+```
 
-npx specificity key create     # a recovery phrase for the portable profile
-npx specificity key restore    # …on a machine that has never seen it
-npx specificity key forget     # log this machine out; profile stays put
-npx specificity key status
+That puts a `specificity` command on your PATH. For a one-off without installing, every command below also works as `npx @mashed-potato-studios/specificity <command>`.
 
-npx specificity sync <dest>    # push, encrypted, to a folder or git repo you own
-npx specificity pull <dest>    # restore onto a new machine
-npx specificity rollback <dest> [list|<version>]
+```sh
+specificity profile        # show your profile + experience
+specificity profile reset  # delete the profile, journal and observations
+specificity version
 
-npx specificity review         # what's been noticed about you
-npx specificity review redactions
-npx specificity pending        # the same batch as JSON, for agents
-npx specificity answer <key> <y|n|never|k|edit "text">
+specificity key create     # a recovery phrase for the portable profile
+specificity key restore    # …on a machine that has never seen it
+specificity key forget     # log this machine out; profile stays put
+specificity key status
+
+specificity sync <dest>    # push, encrypted, to a folder or git repo you own
+specificity pull <dest>    # restore onto a new machine
+specificity rollback <dest> [list|<version>]
+
+specificity review         # what's been noticed about you
+specificity review redactions
+specificity pending        # the same batch as JSON, for agents
+specificity answer <key> <y|n|never|k|edit "text">
 ```
 
 The hooks activate the mode at session start, run the observation pass, and show `[SPECIFICITY]` in the status line while it's on. Your profile lives at `~/.specificity/` (override with `SPECIFICITY_PROFILE_DIR`) and is the single source of truth shared across every agent — only the ephemeral "active" flag is per-agent, so Claude Code, Codex, Copilot, and Qoder all read and write the same you.
@@ -97,15 +103,15 @@ stored wherever you choose — a private git repo, a synced folder, anywhere you
 own. No Specificity server exists, and no plaintext ever leaves your machine.
 
 ```sh
-npx specificity key create              # shows your phrase once — write it down
-npx specificity sync ~/Dropbox/spec     # or a private git repo
+specificity key create              # shows your phrase once — write it down
+specificity sync ~/Dropbox/spec     # or a private git repo
 ```
 
 On a machine that has never seen your profile:
 
 ```sh
-npx specificity key restore "<your twelve words>"
-npx specificity pull ~/Dropbox/spec
+specificity key restore "<your twelve words>"
+specificity pull ~/Dropbox/spec
 ```
 
 Losing the phrase costs nothing while any machine still has the profile —
@@ -120,8 +126,8 @@ Specificity keeps learning how you actually work. A sub-second pass reads the
 transcripts your agent already writes, and proposes what it noticed:
 
 ```sh
-npx specificity review        # what's been noticed, and the answers
-npx specificity review redactions   # what was stripped — counts, never content
+specificity review        # what's been noticed, and the answers
+specificity review redactions   # what was stripped — counts, never content
 ```
 
 **Nothing is ever written without your answer.** Proposals batch at the end of

@@ -1,5 +1,5 @@
 {
-  "name": "specificity",
+  "name": "@mashed-potato-studios/specificity",
   "version": "2.0.0",
   "description": "Agent skills that make AI understand the individual developer — language, dialect, habits, stack preferences. One global profile, every project.",
   "bin": {
@@ -31,5 +31,8 @@
   "type": "module",
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

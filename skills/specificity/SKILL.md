@@ -101,10 +101,16 @@ without the developer's answer.
 
 ### Showing what was noticed
 
+Observation needs the CLI on this machine — `npm i -g
+@mashed-potato-studios/specificity`, or run it from a clone. **If the command
+isn't available, say nothing and skip this section entirely.** A missing CLI is
+not the developer's problem to solve mid-task, and the decoding half of this
+skill works without it.
+
 At the **end** of a session — never mid-task — check for pending proposals:
 
 ```sh
-npx specificity pending      # JSON: { reason, proposals[] }
+npx @mashed-potato-studios/specificity pending      # JSON: { reason, proposals[] }
 ```
 
 - `reason: "throttled"` or an empty list → say nothing at all. Silence is the
@@ -116,11 +122,11 @@ npx specificity pending      # JSON: { reason, proposals[] }
 Record the answer they give:
 
 ```sh
-npx specificity answer <key> y                  # add it
-npx specificity answer <key> n                  # not now
-npx specificity answer <key> never              # never suggest this again
-npx specificity answer <key> edit "their words" # their wording wins
-npx specificity answer <key> keep               # contradictions only
+npx @mashed-potato-studios/specificity answer <key> y                  # add it
+npx @mashed-potato-studios/specificity answer <key> n                  # not now
+npx @mashed-potato-studios/specificity answer <key> never              # never suggest this again
+npx @mashed-potato-studios/specificity answer <key> edit "their words" # their wording wins
+npx @mashed-potato-studios/specificity answer <key> keep               # contradictions only
 ```
 
 A proposal marked `contradicts` disputes something the developer stated about
