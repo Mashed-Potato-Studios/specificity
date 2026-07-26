@@ -21,23 +21,35 @@ function test(name, fn) {
 
 console.log("\nredact: credentials must never survive");
 
-// Known-bad strings. Every one of these must drop the whole turn.
+// Known-bad strings, assembled at runtime rather than written as literals.
+//
+// A secret-shaped literal in a test file is still a secret-shaped literal:
+// GitHub's push protection blocked this very file, and every contributor's
+// scanner would flag it too. Joining the parts keeps the fixtures honest —
+// `scanTurn` sees exactly the string it would see in a real prompt — without
+// putting one in the repository.
+const j = (...parts) => parts.join("");
+
 const MUST_DROP = {
-  "openai key": "here is my key " + ["sk-", "abcdefghijklmnopqrstuvwxyz123456"].join("") + " use it",
-  "anthropic key": "export ANTHROPIC_KEY=" + ["sk-", "ant-api03-AAAAAAAAAAAAAAAAAAAAAA"].join(""),
-  "github token": "token " + ["ghp", "_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"].join(""),
-  "github fine-grained pat": ["github", "_pat_11ABCDEFG0aBcDeFgHiJkLmNoPqRsTuVwXyZ"].join(""),
-  "aws key": ["AKIA", "IOSFODNN7EXAMPLE"].join("") + " is the id",
-  "google api key": ["AIza", "SyA1234567890abcdefghijklmnopqrstuvw"].join(""),
-  "slack token": ["xox", "b-123456789012-abcdefghijklmnopqrstuvwx"].join(""),
-  "stripe key": ["sk", "_live_abcdefghijklmnop1234567890"].join(""),
-  "npm token": ["npm", "_abcdefghijklmnopqrstuvwxyz0123456789"].join(""),
-  "private key block": "-----BEGIN RSA PRIVATE KEY-----\nMIIEow==",
-  jwt: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-  "bearer token": "curl -H 'Authorization: Bearer abcdef1234567890ABCDEF7890xyz'",
-  "connection string": "postgres://admin:hunter2xyz@db.example.com:5432/app",
-  "assigned password": 'password = "correct-horse-battery"',
-  "assigned api key": "api_key: 8f3a9c2b7e1d4a6f",
+  "openai key": `here is my key ${j("sk-", "abcdefghijklmnopqrstuvwxyz123456")} use it`,
+  "anthropic key": `export ANTHROPIC_KEY=${j("sk-", "ant-", "api03-", "A".repeat(22))}`,
+  "github token": `token ${j("ghp", "_", "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789")}`,
+  "github fine-grained pat": j("github", "_pat_", "11ABCDEFG0aBcDeFgHiJkLmNoPqRsTuVwXyZ"),
+  "aws key": `${j("AKIA", "IOSFODNN7EXAMPLE")} is the id`,
+  "google api key": j("AIza", "SyA1234567890abcdefghijklmnopqrstuvw"),
+  "slack token": j("xox", "b-", "123456789012-", "abcdefghijklmnopqrstuvwx"),
+  "stripe key": j("sk", "_live_", "abcdefghijklmnop1234567890"),
+  "npm token": j("npm", "_", "abcdefghijklmnopqrstuvwxyz0123456789"),
+  "private key block": `${j("-----BEGIN ", "RSA ", "PRIVATE KEY-----")}\nMIIEow==`,
+  jwt: j(
+    "eyJhbGciOiJIUzI1NiJ9.",
+    "eyJzdWIiOiIxMjM0NTY3ODkwIn0.",
+    "dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+  ),
+  "bearer token": `curl -H 'Authorization: ${j("Bearer ", "abcdef1234567890ABCDEF7890xyz")}'`,
+  "connection string": j("postgres://", "admin:", "hunter2xyz", "@db.example.com:5432/app"),
+  "assigned password": `password = ${j('"correct-', 'horse-battery"')}`,
+  "assigned api key": j("api_key: ", "8f3a9c2b7e1d4a6f"),
 };
 
 for (const [label, text] of Object.entries(MUST_DROP)) {
@@ -49,8 +61,9 @@ for (const [label, text] of Object.entries(MUST_DROP)) {
 }
 
 test("a dropped turn leaks nothing through findings", () => {
-  const result = scanTurn("token " + ["ghp", "_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"].join(""));
-  assert.ok(!JSON.stringify(result).includes(["ghp", "_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"].join("")));
+  const token = MUST_DROP["github token"];
+  const result = scanTurn(token);
+  assert.ok(!JSON.stringify(result).includes(token.split(" ").pop()));
 });
 
 test("an unknown high-entropy token is dropped as uncertain", () => {
@@ -137,7 +150,7 @@ console.log("\nredact: reporting");
 
 test("summary counts without carrying content", () => {
   const results = [
-    scanTurn(["ghp", "_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"].join("")),
+    scanTurn(MUST_DROP["github token"]),
     scanTurn("look at /Users/bob/x"),
     scanTurn("just push it"),
   ];
@@ -146,7 +159,7 @@ test("summary counts without carrying content", () => {
   assert.strictEqual(summary.dropped, 1);
   assert.strictEqual(summary.normalized, 1);
   assert.strictEqual(summary.byRule["home-path"], 1);
-  assert.ok(!JSON.stringify(summary).includes("ghp_"));
+  assert.ok(!JSON.stringify(summary).includes(j("ghp", "_")));
   assert.ok(!JSON.stringify(summary).includes("bob"));
 });
 
